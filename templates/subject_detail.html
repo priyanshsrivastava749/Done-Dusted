@@ -109,8 +109,7 @@
                             onclick="playVideo('{{ video.video_id }}'); return false;">Play</button>
                     </td>
                     <td>
-                        <input type="checkbox" onchange="toggleWatched('{{ video.id }}', this)" {{
-                            video.is_watched|yesno:"checked," }}>
+                        <input type="checkbox" onchange="toggleWatched('{{ video.id }}', this)" {% if video.is_watched %}checked{% endif %}>
                     </td>
                 </tr>
                 {% endfor %}
