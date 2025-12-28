@@ -105,7 +105,8 @@
                     <td>{{ forloop.counter }}</td>
                     <td>{{ video.title }}</td>
                     <td>
-                        <button class="btn" onclick="playVideo('{{ video.video_id }}')">Play</button>
+                        <button type="button" class="btn"
+                            onclick="playVideo('{{ video.video_id }}'); return false;">Play</button>
                     </td>
                     <td>
                         <input type="checkbox" onchange="toggleWatched('{{ video.id }}', this)" {{
@@ -168,7 +169,12 @@
         const container = document.getElementById('video-player-container');
         const player = document.getElementById('main-player');
         container.style.display = 'block';
-        player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+        // Create the iframe with specific attributes to bypass some restrictions
+        // Error 153 often happens on 127.0.0.1; removing the origin param or changing it might help.
+        // Trying with strict origin policy and no-referrer first.
+        player.setAttribute('referrerPolicy', 'strict-origin-when-cross-origin');
+        const origin = window.location.origin;
+        player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=${origin}`;
         window.scrollTo(0, 0);
     }
 

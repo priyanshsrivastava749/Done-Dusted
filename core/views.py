@@ -25,6 +25,8 @@ def dashboard(request):
     # Check if user has API key (Env or DB)
     from django.conf import settings
     env_key = getattr(settings, 'GOOGLE_API_KEY', None)
+    if env_key == 'YOUR_API_KEY_HERE':
+        env_key = None
     
     try:
         profile_key = request.user.profile.google_api_key
@@ -94,6 +96,9 @@ def add_playlist(request, subject_id):
         
         from django.conf import settings
         img_key = getattr(settings, 'GOOGLE_API_KEY', None)
+        if img_key == 'YOUR_API_KEY_HERE':
+            img_key = None
+            
         profile_key = request.user.profile.google_api_key
         api_key = img_key if img_key else profile_key
         
