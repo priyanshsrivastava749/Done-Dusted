@@ -48,10 +48,12 @@ class Note(models.Model):
     def __str__(self):
         return f"Notes for {self.subject.name}"
 
+from django.utils import timezone
+
 class DailyStudyLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_logs')
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='study_logs')
-    date = models.DateField(auto_now_add=True)
+    date = models.DateField(default=timezone.now)
     seconds_watched = models.PositiveIntegerField(default=0)
 
     class Meta:

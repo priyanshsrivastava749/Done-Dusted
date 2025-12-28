@@ -9,8 +9,9 @@
         overflow-y: auto;
         /* Internal scrollbar */
         padding: 40px;
-        background: white;
-        border: 1px solid #e1e1e0;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
         border-radius: 4px;
         outline: none;
         font-size: 16px;
@@ -21,7 +22,7 @@
 
     .notion-editor:empty:before {
         content: attr(placeholder);
-        color: #999;
+        color: var(--text-secondary);
     }
 
     .notion-editor h1,
@@ -29,6 +30,7 @@
     .notion-editor h3 {
         margin-top: 1.5em;
         margin-bottom: 0.5em;
+        color: var(--text-primary);
     }
 
     .notion-editor p {
@@ -41,13 +43,13 @@
     }
 
     .notion-editor blockquote {
-        border-left: 3px solid #37352f;
+        border-left: 3px solid var(--text-primary);
         padding-left: 14px;
-        color: #666;
+        color: var(--text-secondary);
     }
 
     .notion-editor code {
-        background: rgba(135, 131, 120, .15);
+        background: var(--bg-secondary);
         color: #EB5757;
         padding: 0.2em 0.4em;
         border-radius: 3px;
@@ -79,18 +81,17 @@
 </div>
 
 <!-- Daily Goal Section -->
-<div class="card"
-    style="margin-bottom: 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; background: #f0f7ff; border: 1px solid #cce5ff;">
+<div class="goal-card">
     <div>
         <strong>Today's Study:</strong> <span id="today-minutes">{{ today_minutes }}</span> mins
-        <span style="color: #999; margin: 0 10px;">/</span>
+        <span style="color: var(--text-secondary); margin: 0 10px;">/</span>
         <strong>Goal:</strong> {{ daily_goal }} mins
     </div>
     <form action="{% url 'set_daily_goal' subject.id %}" method="post"
         style="display: flex; gap: 10px; align-items: center;">
         {% csrf_token %}
-        <input type="number" name="minutes" value="{{ daily_goal }}" style="width: 80px; padding: 5px;" min="0">
-        <button type="submit" class="btn btn-sm">Set Goal</button>
+        <input type="number" name="minutes" value="{{ daily_goal }}" style="width: 80px;" min="0">
+        <button type="submit" class="btn btn-primary btn-sm">Set Goal</button>
     </form>
 </div>
 

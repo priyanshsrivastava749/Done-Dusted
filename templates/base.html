@@ -7,6 +7,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Done-Dusted</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script>
+        // Initialize Theme
+        (function () {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+    </script>
 
     <script>
         window.MathJax = {
@@ -47,6 +61,11 @@
                     Common Notes</a>
             </div>
             <div style="flex: 1;"></div>
+            <div style="margin-bottom: 20px; display: flex; justify-content: center;">
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark Mode">
+                    🌓
+                </button>
+            </div>
             <div>
                 <p>User: {{ user.username }}</p>
                 <form action="{% url 'logout' %}" method="post">
