@@ -78,6 +78,22 @@
     </div>
 </div>
 
+<!-- Daily Goal Section -->
+<div class="card"
+    style="margin-bottom: 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; background: #f0f7ff; border: 1px solid #cce5ff;">
+    <div>
+        <strong>Today's Study:</strong> <span id="today-minutes">{{ today_minutes }}</span> mins
+        <span style="color: #999; margin: 0 10px;">/</span>
+        <strong>Goal:</strong> {{ daily_goal }} mins
+    </div>
+    <form action="{% url 'set_daily_goal' subject.id %}" method="post"
+        style="display: flex; gap: 10px; align-items: center;">
+        {% csrf_token %}
+        <input type="number" name="minutes" value="{{ daily_goal }}" style="width: 80px; padding: 5px;" min="0">
+        <button type="submit" class="btn btn-sm">Set Goal</button>
+    </form>
+</div>
+
 <!-- Add Playlist Section -->
 {% if videos.count == 0 %}
 <div class="card" style="margin-bottom: 20px; background: #fff8c4;">
@@ -94,6 +110,7 @@
     <!-- Left: Video Player & List -->
     <div class="video-section">
         <div id="video-player-container" style="margin-bottom: 20px; display: none;">
+            <h4 id="playing-info" style="margin-bottom: 10px; color: #d9534f;">Playing: -</h4>
             <iframe id="main-player" width="100%" height="315" src="" title="YouTube video player" frameborder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowfullscreen></iframe>
@@ -115,7 +132,7 @@
                     <td>{{ video.title }}</td>
                     <td>
                         <button type="button" class="btn"
-                            onclick="playVideo('{{ video.video_id }}'); return false;">Play</button>
+                            onclick="playVideo('{{ video.video_id }}', '{{ forloop.counter }}'); return false;">Play</button>
                     </td>
                     <td>
                         <input type="checkbox" onchange="toggleWatched('{{ video.id }}', this)" {% if video.is_watched %}checked{% endif %}>
@@ -153,17 +170,12 @@
     const noteId = "{{ note.id }}";
 
     // Initial Load
-    // Note: We are now changing strict text content to HTML content storage.
-    // If old notes were plain text, they will render as plain text inside the HTML div, which is fine.
-    // We strictly assume 'note.content' is safe HTML. In production, sanitize this!
-    // Using escapejs to prevent syntax errors from backslashes in LaTeX content
     const initialContent = `{{ note.content|escapejs }}`;
     document.getElementById('editor').innerHTML = initialContent;
 
     // Trigger math render on load
     if (window.MathJax) {
         MathJax.typesetPromise([document.getElementById('editor')]).then(() => {
-            // Remove tabindex from MathJax elements to prevent focus stealing
             document.querySelectorAll('mjx-container').forEach(el => el.removeAttribute('tabindex'));
         });
     }
@@ -173,13 +185,14 @@
         document.getElementById('editor').focus();
     }
 
-    function playVideo(videoId) {
+    function playVideo(videoId, videoNumber) {
         const container = document.getElementById('video-player-container');
         const player = document.getElementById('main-player');
+        const info = document.getElementById('playing-info');
+
         container.style.display = 'block';
-        // Create the iframe with specific attributes to bypass some restrictions
-        // Error 153 often happens on 127.0.0.1; removing the origin param or changing it might help.
-        // Trying with strict origin policy and no-referrer first.
+        info.innerText = `Playing: Video ${videoNumber}`;
+
         player.setAttribute('referrerPolicy', 'strict-origin-when-cross-origin');
         const origin = window.location.origin;
         player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=${origin}`;
@@ -194,11 +207,16 @@
                 'X-CSRFToken': '{{ csrf_token }}'
             },
             body: JSON.stringify({ is_watched: checkbox.checked })
-        });
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.today_minutes !== undefined) {
+                    document.getElementById('today-minutes').innerText = data.today_minutes;
+                }
+            });
     }
 
     function saveNotes() {
-        // Save the innerHTML (rich text)
         const content = document.getElementById('editor').innerHTML;
         fetch(`/core/note/${noteId}/save/`, {
             method: 'POST',
@@ -216,7 +234,6 @@
         var printWindow = window.open('', '', 'height=600,width=800');
         printWindow.document.write('<html><head><title>Notes Export</title>');
         printWindow.document.write('<style>body{font-family:sans-serif; padding: 40px;} img {max-width:100%;}</style>');
-        // Load MathJax for the print window too
         printWindow.document.write('<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"><\/script>');
         printWindow.document.write('</head><body>');
         printWindow.document.write('<h1>{{ subject.name }} Notes</h1>');
@@ -224,7 +241,6 @@
         printWindow.document.write('</body></html>');
         printWindow.document.close();
 
-        // Wait for images and MathJax
         setTimeout(() => {
             printWindow.print();
         }, 1500);
@@ -239,35 +255,26 @@
 
     function addMarkdown() {
         const editor = document.getElementById('editor');
-        // Get text content to treat as markdown
         const text = editor.innerText;
 
-        // Verify if marked is available
         if (typeof marked === 'undefined') {
             alert('Markdown library not loaded. Please refresh the page.');
             return;
         }
 
-        // 1. Protection: Temporarily replace math with placeholders
         const mathBlocks = [];
-
-        // Protect block math $$...$$
-        // We use a safe replacement strategy
         let processedText = text.replace(/\$\$([\s\S]+?)\$\$/g, function (match) {
             mathBlocks.push(match);
             return `MATH_BLOCK_${mathBlocks.length - 1}`;
         });
 
-        // Protect inline math $...$
         processedText = processedText.replace(/\$([^\$\n]+?)\$/g, function (match) {
             mathBlocks.push(match);
             return `MATH_INLINE_${mathBlocks.length - 1}`;
         });
 
-        // 2. Parse Markdown
         let html = marked.parse(processedText);
 
-        // 3. Restoration: Put math back
         html = html.replace(/MATH_BLOCK_(\d+)/g, function (match, id) {
             return mathBlocks[parseInt(id)];
         });
@@ -276,20 +283,15 @@
             return mathBlocks[parseInt(id)];
         });
 
-        // 4. Update Editor
         editor.innerHTML = html;
 
-        // 5. Render Math
         if (window.MathJax) {
             MathJax.typesetPromise([editor]).then(() => {
-                // Remove tabindex from mjx-containers if needed
                 document.querySelectorAll('mjx-container').forEach(el => el.removeAttribute('tabindex'));
             }).catch(err => {
                 console.error('MathJax Error:', err);
             });
         }
     }
-
-
 </script>
 {% endblock %}

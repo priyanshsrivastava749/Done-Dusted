@@ -3,8 +3,9 @@ from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
-from .models import Exam, Subject, Video, Note, UserProfile
+from .models import Exam, Subject, Video, Note, UserProfile, DailyStudyLog
 from .utils import fetch_playlist_items
 
 def register(request):
@@ -79,13 +80,20 @@ def subject_detail(request, subject_id):
     completed = videos.filter(is_watched=True).count()
     progress = (completed / total * 360) if total > 0 else 0
     
+    # Daily Progress
+    today = timezone.now().date()
+    daily_log, _ = DailyStudyLog.objects.get_or_create(user=request.user, subject=subject, date=today)
+    today_minutes = round(daily_log.seconds_watched / 60, 1)
+    
     return render(request, 'subject_detail.html', {
         'subject': subject,
         'videos': videos,
         'note': note,
         'progress': progress,
         'total': total,
-        'completed': completed
+        'completed': completed,
+        'today_minutes': today_minutes,
+        'daily_goal': subject.daily_goal_minutes
     })
 
 @login_required
@@ -114,7 +122,8 @@ def add_playlist(request, subject_id):
                     title=vid['title'],
                     video_id=vid['video_id'],
                     url=vid['url'],
-                    order=idx
+                    order=idx,
+                    duration_seconds=vid.get('duration', 0)
                 )
     return redirect('subject_detail', subject_id=subject.id)
 
@@ -126,7 +135,28 @@ def update_video_status(request, video_id):
     data = json.loads(request.body)
     video.is_watched = data.get('is_watched', False)
     video.save()
-    return JsonResponse({'status': 'ok'})
+    
+    # Update Daily Log
+    today = timezone.now().date()
+    # Ensure log exists for this specific subject
+    daily_log, _ = DailyStudyLog.objects.get_or_create(
+        user=request.user, 
+        subject=video.subject, 
+        date=today
+    )
+    
+    if video.is_watched:
+        daily_log.seconds_watched += video.duration_seconds
+    else:
+        # Prevent negative values if unchecking
+        daily_log.seconds_watched = max(0, daily_log.seconds_watched - video.duration_seconds)
+    
+    daily_log.save()
+    
+    return JsonResponse({
+        'status': 'ok', 
+        'today_minutes': round(daily_log.seconds_watched / 60, 1)
+    })
 
 @require_POST
 @login_required
@@ -137,3 +167,15 @@ def save_note(request, note_id):
     note.content = data.get('content', '')
     note.save()
     return JsonResponse({'status': 'ok'})
+
+@require_POST
+@login_required
+def set_daily_goal(request, subject_id):
+    subject = get_object_or_404(Subject, id=subject_id, exam__user=request.user)
+    try:
+        minutes = int(request.POST.get('minutes', 0))
+        subject.daily_goal_minutes = minutes
+        subject.save()
+    except ValueError:
+        pass
+    return redirect('subject_detail', subject_id=subject.id)

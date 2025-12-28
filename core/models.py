@@ -20,6 +20,7 @@ class Exam(models.Model):
 class Subject(models.Model):
     name = models.CharField(max_length=100)
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='subjects')
+    daily_goal_minutes = models.PositiveIntegerField(default=0, help_text="Daily study goal in minutes")
     
     def __str__(self):
         return self.name
@@ -31,6 +32,7 @@ class Video(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='videos')
     is_watched = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
+    duration_seconds = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ['order']
@@ -45,3 +47,15 @@ class Note(models.Model):
 
     def __str__(self):
         return f"Notes for {self.subject.name}"
+
+class DailyStudyLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_logs')
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='study_logs')
+    date = models.DateField(auto_now_add=True)
+    seconds_watched = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ['user', 'subject', 'date']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.subject.name} - {self.date}"
