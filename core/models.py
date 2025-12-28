@@ -59,3 +59,11 @@ class DailyStudyLog(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.subject.name} - {self.date}"
+
+class CommonNote(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='common_note')
+    content = models.TextField(blank=True, help_text="Common scratchpad content")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Common Note for {self.user.username}"

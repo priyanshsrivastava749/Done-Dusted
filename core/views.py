@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from .models import Exam, Subject, Video, Note, UserProfile, DailyStudyLog
+from .models import Exam, Subject, Video, Note, UserProfile, DailyStudyLog, CommonNote
 from .utils import fetch_playlist_items
 
 def register(request):
@@ -179,3 +179,18 @@ def set_daily_goal(request, subject_id):
     except ValueError:
         pass
     return redirect('subject_detail', subject_id=subject.id)
+
+@login_required
+def common_note_view(request):
+    note, created = CommonNote.objects.get_or_create(user=request.user)
+    return render(request, 'common_note.html', {'note': note})
+
+@require_POST
+@login_required
+def save_common_note(request):
+    note, created = CommonNote.objects.get_or_create(user=request.user)
+    import json
+    data = json.loads(request.body)
+    note.content = data.get('content', '')
+    note.save()
+    return JsonResponse({'status': 'ok'})

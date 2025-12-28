@@ -151,6 +151,17 @@
                 <button class="btn" onclick="formatDoc('bold')" title="Bold"><b>B</b></button>
                 <button class="btn" onclick="formatDoc('italic')" title="Italic"><i>I</i></button>
 
+                <select id="fontSizeSelect" class="btn" onchange="changeFontSize(this.value)"
+                    style="padding: 2px 10px; cursor: pointer;">
+                    <option value="" disabled selected>Size</option>
+                    <option value="12px">12px</option>
+                    <option value="14px">14px</option>
+                    <option value="16px">16px</option>
+                    <option value="18px">18px</option>
+                    <option value="20px">20px</option>
+                    <option value="24px">24px</option>
+                    <option value="30px">30px</option>
+                </select>
                 <button class="btn" onclick="downloadPDF()">Export PDF</button>
             </div>
         </div>
@@ -182,6 +193,32 @@
     function formatDoc(cmd, value = null) {
         document.execCommand(cmd, false, value);
         document.getElementById('editor').focus();
+    }
+
+    function changeFontSize(size) {
+        if (!size) return;
+
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+            alert("Please select some text first.");
+            // Reset dropdown to default behavior if needed, generally fine to leave as is
+            return;
+        }
+
+        const span = document.createElement("span");
+        span.style.fontSize = size;
+
+        try {
+            const range = selection.getRangeAt(0);
+            const content = range.extractContents();
+            span.appendChild(content);
+            range.insertNode(span);
+        } catch (e) {
+            console.error("Could not apply font size", e);
+        }
+
+        // Reset select to "Size" placeholder to allow re-selecting same size if needed
+        document.getElementById('fontSizeSelect').selectedIndex = 0;
     }
 
     function playVideo(videoId, videoNumber) {
