@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+{% if not has_api_key %}
+<div class="card" style="background-color: #fff8c4;">
+    <h3>⚠️ Setup Required</h3>
+    <p>You need a YouTube Data API Key to import playlists.</p>
+    <form method="post" action="{% url 'save_api_key' %}">
+        {% csrf_token %}
+        <input type="text" name="api_key" placeholder="Enter Google API Key" required style="width: 300px;">
+        <button type="submit" class="btn btn-primary">Save Key</button>
+    </form>
+    <p><small><a href="{% url 'api_guide' %}" target="_blank">How to generate API Key?</a></small></p>
+</div>
+{% endif %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px;">
+    <h2>Your Goals / Exams</h2>
+    <a href="{% url 'create_exam' %}" class="btn btn-primary">+ New Goal</a>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+    {% for exam in exams %}
+    <a href="{% url 'exam_detail' exam.id %}" class="card" style="display: block; color: inherit;">
+        <h3>{{ exam.name }}</h3>
+        <p>{{ exam.subjects.count }} Subjects</p>
+    </a>
+    {% empty %}
+    <p>No goals set yet. Start by creating one!</p>
+    {% endfor %}
+</div>
+{% endblock %}

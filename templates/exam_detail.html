@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <a href="{% url 'dashboard' %}" style="color: #666;">← Back to Dashboard</a>
+        <h1>{{ exam.name }}</h1>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3>Add Subject</h3>
+    <form method="post" style="display: flex; gap: 10px;">
+        {% csrf_token %}
+        <input type="text" name="name" placeholder="Subject Name (e.g. Operating Systems)" required>
+        <button type="submit" class="btn btn-primary">Add Subject</button>
+    </form>
+</div>
+
+<h2 style="margin-top: 40px;">Subjects</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
+    {% for subject in subjects %}
+    <a href="{% url 'subject_detail' subject.id %}" class="card" style="display: block; color: inherit;">
+        <h3>{{ subject.name }}</h3>
+        <p>{{ subject.videos.count }} Videos</p>
+        <p style="color: #666; font-size: 0.9em;">Click to Study</p>
+    </a>
+    {% empty %}
+    <p>No subjects added yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

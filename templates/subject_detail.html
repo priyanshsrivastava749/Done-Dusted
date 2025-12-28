@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .notion-editor {
+        min-height: 400px;
+        max-height: 75vh;
+        /* Limit height to fit viewport */
+        overflow-y: auto;
+        /* Internal scrollbar */
+        padding: 40px;
+        background: white;
+        border: 1px solid #e1e1e0;
+        border-radius: 4px;
+        outline: none;
+        font-size: 16px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        /* Preserve whitespace */
+    }
+
+    .notion-editor:empty:before {
+        content: attr(placeholder);
+        color: #999;
+    }
+
+    .notion-editor h1,
+    .notion-editor h2,
+    .notion-editor h3 {
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+    }
+
+    .notion-editor p {
+        margin-bottom: 1em;
+    }
+
+    .notion-editor ul,
+    .notion-editor ol {
+        margin-left: 20px;
+    }
+
+    .notion-editor blockquote {
+        border-left: 3px solid #37352f;
+        padding-left: 14px;
+        color: #666;
+    }
+
+    .notion-editor code {
+        background: rgba(135, 131, 120, .15);
+        color: #EB5757;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+        font-family: monospace;
+    }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <a href="{% url 'exam_detail' subject.exam.id %}" style="color: #666;">← Back to {{ subject.exam.name }}</a>
+        <h1>{{ subject.name }}</h1>
+    </div>
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <div class="progress-circle" style="--progress: {{ progress }}deg; width: 60px; height: 60px;">
+            <div class="progress-inner" style="width: 50px; height: 50px; font-size: 12px;">
+                {{ completed }} / {{ total }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Playlist Section -->
+{% if videos.count == 0 %}
+<div class="card" style="margin-bottom: 20px; background: #fff8c4;">
+    <h3>Import Playlist</h3>
+    <form action="{% url 'add_playlist' subject.id %}" method="post">
+        {% csrf_token %}
+        <input type="text" name="playlist_url" placeholder="Paste YouTube Playlist URL" required>
+        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Import Videos</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="split-view">
+    <!-- Left: Video Player & List -->
+    <div class="video-section">
+        <div id="video-player-container" style="margin-bottom: 20px; display: none;">
+            <iframe id="main-player" width="100%" height="315" src="" title="YouTube video player" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Title</th>
+                    <th style="width: 80px;">Action</th>
+                    <th style="width: 50px;">Done</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for video in videos %}
+                <tr class="{% if video.is_watched %}watched{% endif %}">
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ video.title }}</td>
+                    <td>
+                        <button class="btn" onclick="playVideo('{{ video.video_id }}')">Play</button>
+                    </td>
+                    <td>
+                        <input type="checkbox" onchange="toggleWatched('{{ video.id }}', this)" {{
+                            video.is_watched|yesno:"checked," }}>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Right: Notes -->
+    <div class="notes-section">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <h3>Notes</h3>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" onclick="formatDoc('bold')" title="Bold"><b>B</b></button>
+                <button class="btn" onclick="formatDoc('italic')" title="Italic"><i>I</i></button>
+                <button class="btn" onclick="addMarkdown()" title="Render Markdown"><b>MD</b></button>
+                <button class="btn" onclick="clearNotes()" title="Clear Notes" style="color:red;"><b>✖</b></button>
+                <button class="btn" onclick="downloadPDF()">Export PDF</button>
+            </div>
+        </div>
+
+        <!-- Editable Div -->
+        <div id="editor" class="notion-editor" contenteditable="true"
+            placeholder="Type here or paste ChatGPT response with Markdown/LaTeX..."></div>
+
+        <div style="text-align: right; margin-top: 5px;">
+            <button class="btn btn-primary" onclick="saveNotes()">Save Notes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const noteId = "{{ note.id }}";
+
+    // Initial Load
+    // Note: We are now changing strict text content to HTML content storage.
+    // If old notes were plain text, they will render as plain text inside the HTML div, which is fine.
+    // We strictly assume 'note.content' is safe HTML. In production, sanitize this!
+    // Using escapejs to prevent syntax errors from backslashes in LaTeX content
+    const initialContent = `{{ note.content|escapejs }}`;
+    document.getElementById('editor').innerHTML = initialContent;
+
+    // Trigger math render on load
+    if (window.MathJax) {
+        MathJax.typesetPromise([document.getElementById('editor')]).then(() => {
+            // Remove tabindex from MathJax elements to prevent focus stealing
+            document.querySelectorAll('mjx-container').forEach(el => el.removeAttribute('tabindex'));
+        });
+    }
+
+    function formatDoc(cmd, value = null) {
+        document.execCommand(cmd, false, value);
+        document.getElementById('editor').focus();
+    }
+
+    function playVideo(videoId) {
+        const container = document.getElementById('video-player-container');
+        const player = document.getElementById('main-player');
+        container.style.display = 'block';
+        player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+        window.scrollTo(0, 0);
+    }
+
+    function toggleWatched(videoId, checkbox) {
+        fetch(`/core/video/${videoId}/status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ is_watched: checkbox.checked })
+        });
+    }
+
+    function saveNotes() {
+        // Save the innerHTML (rich text)
+        const content = document.getElementById('editor').innerHTML;
+        fetch(`/core/note/${noteId}/save/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ content: content })
+        }).then(() => {
+            alert('Notes Saved!');
+        });
+    }
+
+    function downloadPDF() {
+        var printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>Notes Export</title>');
+        printWindow.document.write('<style>body{font-family:sans-serif; padding: 40px;} img {max-width:100%;}</style>');
+        // Load MathJax for the print window too
+        printWindow.document.write('<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"><\/script>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write('<h1>{{ subject.name }} Notes</h1>');
+        printWindow.document.write(document.getElementById('editor').innerHTML);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+
+        // Wait for images and MathJax
+        setTimeout(() => {
+            printWindow.print();
+        }, 1500);
+    }
+
+    function clearNotes() {
+        if (confirm("Are you sure you want to clear all notes?")) {
+            document.getElementById('editor').innerHTML = "";
+            document.getElementById('editor').focus();
+        }
+    }
+
+    function addMarkdown() {
+        const editor = document.getElementById('editor');
+        // Get text content to treat as markdown
+        const text = editor.innerText;
+
+        // Verify if marked is available
+        if (typeof marked === 'undefined') {
+            alert('Markdown library not loaded. Please refresh the page.');
+            return;
+        }
+
+        // 1. Protection: Temporarily replace math with placeholders
+        const mathBlocks = [];
+
+        // Protect block math $$...$$
+        // We use a safe replacement strategy
+        let processedText = text.replace(/\$\$([\s\S]+?)\$\$/g, function (match) {
+            mathBlocks.push(match);
+            return `MATH_BLOCK_${mathBlocks.length - 1}`;
+        });
+
+        // Protect inline math $...$
+        processedText = processedText.replace(/\$([^\$\n]+?)\$/g, function (match) {
+            mathBlocks.push(match);
+            return `MATH_INLINE_${mathBlocks.length - 1}`;
+        });
+
+        // 2. Parse Markdown
+        let html = marked.parse(processedText);
+
+        // 3. Restoration: Put math back
+        html = html.replace(/MATH_BLOCK_(\d+)/g, function (match, id) {
+            return mathBlocks[parseInt(id)];
+        });
+
+        html = html.replace(/MATH_INLINE_(\d+)/g, function (match, id) {
+            return mathBlocks[parseInt(id)];
+        });
+
+        // 4. Update Editor
+        editor.innerHTML = html;
+
+        // 5. Render Math
+        if (window.MathJax) {
+            MathJax.typesetPromise([editor]).then(() => {
+                // Remove tabindex from mjx-containers if needed
+                document.querySelectorAll('mjx-container').forEach(el => el.removeAttribute('tabindex'));
+            }).catch(err => {
+                console.error('MathJax Error:', err);
+            });
+        }
+    }
+
+
+</script>
+{% endblock %}

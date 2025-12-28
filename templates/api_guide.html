@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <a href="{% url 'dashboard' %}" style="color: #666;">← Back to Dashboard</a>
+    <h1>How to get your YouTube API Key</h1>
+
+    <div class="card">
+        <p>To import playlists, this app needs a <strong>YouTube Data API v3</strong> key from Google.</p>
+        <ol style="line-height: 1.8;">
+            <li>Go to the <a href="https://console.cloud.google.com/" target="_blank"
+                    style="color: var(--primary-color);">Google Cloud Console</a>.</li>
+            <li>Create a <strong>New Project</strong> (e.g. named "Done-Dusted").</li>
+            <li>In the search bar, type <strong>"YouTube Data API v3"</strong> and select it.</li>
+            <li>Click <strong>Enable</strong>.</li>
+            <li>On the left sidebar, click <strong>Credentials</strong>.</li>
+            <li>Click <strong>+ CREATE CREDENTIALS</strong> and select <strong>API key</strong>.</li>
+            <li>Copy the generated key (starts with <code>AIza...</code>).</li>
+            <li>Paste it in your <a href="{% url 'dashboard' %}" style="color: var(--primary-color);">Dashboard</a>.
+            </li>
+        </ol>
+
+        <p><strong>Note:</strong> This key is stored locally in your database and used only to fetch playlist details.
+        </p>
+    </div>
+</div>
+{% endblock %}

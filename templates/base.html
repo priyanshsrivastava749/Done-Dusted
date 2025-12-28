@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Done-Dusted</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Hide MathJax Error Messages */
+        mjx-merror,
+        .mjx-error {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* Prevent MathJax from stealing focus */
+        mjx-container {
+            outline: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="layout">
+        {% if user.is_authenticated %}
+        <nav class="sidebar">
+            <h3>Done-Dusted</h3>
+            <div style="margin-top: 20px;">
+                <a href="{% url 'dashboard' %}" class="btn" style="width: 100%; text-align: left; border:none;">🏠
+                    Dashboard</a>
+            </div>
+            <div style="flex: 1;"></div>
+            <div>
+                <p>User: {{ user.username }}</p>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn" style="width: 100%;">Log Out</button>
+                </form>
+            </div>
+        </nav>
+        {% endif %}
+
+        <main class="main-content">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+</body>
+
+</html>
