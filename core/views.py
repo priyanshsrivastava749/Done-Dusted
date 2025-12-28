@@ -22,13 +22,17 @@ def register(request):
 @login_required
 def dashboard(request):
     exams = request.user.exams.all()
-    # Check if user has API key
+    # Check if user has API key (Env or DB)
+    from django.conf import settings
+    env_key = getattr(settings, 'GOOGLE_API_KEY', None)
+    
     try:
-        api_key = request.user.profile.google_api_key
-        has_api_key = bool(api_key)
+        profile_key = request.user.profile.google_api_key
     except UserProfile.DoesNotExist:
         UserProfile.objects.create(user=request.user)
-        has_api_key = False
+        profile_key = None
+        
+    has_api_key = bool(env_key or profile_key)
         
     return render(request, 'dashboard.html', {'exams': exams, 'has_api_key': has_api_key})
 
@@ -87,7 +91,11 @@ def add_playlist(request, subject_id):
     subject = get_object_or_404(Subject, id=subject_id, exam__user=request.user)
     if request.method == 'POST':
         url = request.POST.get('playlist_url')
-        api_key = request.user.profile.google_api_key
+        
+        from django.conf import settings
+        img_key = getattr(settings, 'GOOGLE_API_KEY', None)
+        profile_key = request.user.profile.google_api_key
+        api_key = img_key if img_key else profile_key
         
         if not api_key:
             # Should handle better, but for now redirect
