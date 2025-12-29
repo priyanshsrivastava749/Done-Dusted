@@ -51,6 +51,7 @@ class Video(models.Model):
 class Note(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='notes')
     content = models.TextField(blank=True, help_text="Markdown/HTML content with LaTeX support")
+    content_screenshots = models.TextField(blank=True, help_text="Lecture screenshots/notes")
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

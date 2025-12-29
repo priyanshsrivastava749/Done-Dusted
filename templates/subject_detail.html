@@ -1,23 +1,62 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<!-- Highlight.js (VS Code Dark) & Marked.js -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 <style>
+    /* Toggle Switch Styles */
+    .note-toggle-container {
+        display: flex;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 4px;
+        gap: 5px;
+    }
+
+    .note-toggle-btn {
+        flex: 1;
+        padding: 6px 12px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 0.9em;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .note-toggle-btn.active {
+        background: var(--card-bg);
+        color: var(--text-primary);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Editor Container */
     .notion-editor {
         min-height: 400px;
         max-height: 75vh;
-        /* Limit height to fit viewport */
         overflow-y: auto;
-        /* Internal scrollbar */
         padding: 40px;
         background: var(--bg-primary);
-        color: var(--text-primary);
+        color: #ffffff;
+        caret-color: white;
         border: 1px solid var(--border-color);
         border-radius: 4px;
         outline: none;
         font-size: 16px;
         line-height: 1.6;
         white-space: pre-wrap;
-        /* Preserve whitespace */
+        display: none;
+        /* Hidden by default */
+    }
+
+    .notion-editor.active-editor {
+        display: block;
     }
 
     .notion-editor:empty:before {
@@ -25,12 +64,25 @@
         color: var(--text-secondary);
     }
 
+    /* Headings White */
     .notion-editor h1,
     .notion-editor h2,
-    .notion-editor h3 {
+    .notion-editor h3,
+    .notion-editor h4,
+    .notion-editor h5,
+    .notion-editor h6 {
         margin-top: 1.5em;
         margin-bottom: 0.5em;
-        color: var(--text-primary);
+        color: #ffffff !important;
+    }
+
+    /* General Text White - Be careful not to override Code colors */
+    .notion-editor p,
+    .notion-editor div,
+    .notion-editor li,
+    .notion-editor strong,
+    .notion-editor b {
+        color: #ffffff !important;
     }
 
     .notion-editor p {
@@ -45,15 +97,40 @@
     .notion-editor blockquote {
         border-left: 3px solid var(--text-primary);
         padding-left: 14px;
-        color: var(--text-secondary);
+        color: #cccccc;
     }
 
-    .notion-editor code {
-        background: var(--bg-secondary);
-        color: #EB5757;
+    /* --- CODE BLOCK STYLING (VS Code) --- */
+    .notion-editor pre {
+        background: #1E1E1E !important;
+        /* VS Code Background */
+        border-radius: 6px;
+        padding: 1em;
+        margin: 1em 0;
+        overflow-x: auto;
+        border: 1px solid #333;
+    }
+
+    .notion-editor pre code {
+        background: transparent !important;
+        padding: 0;
+        border-radius: 0;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 0.9em;
+        /* Do NOT set color here, let highlight.js set it */
+    }
+
+    /* --- INLINE CODE STYLING --- */
+    /* Target code tags that are NOT inside pre */
+    .notion-editor :not(pre)>code {
+        background: #2D2D2D !important;
+        /* Visible Grey Background */
+        color: #E06C75 !important;
+        /* Reddish/Pinkish text (VS Code-ish) */
         padding: 0.2em 0.4em;
         border-radius: 3px;
         font-family: monospace;
+        /* Ensure it overrides the 'white' text rule */
     }
 
     .notion-editor img {
@@ -62,7 +139,6 @@
         border-radius: 4px;
         margin: 10px 0;
         cursor: pointer;
-        /* Indicate it might be interactive */
     }
 </style>
 
@@ -72,6 +148,21 @@
         <h1>{{ subject.name }}</h1>
     </div>
     <div style="display: flex; align-items: center; gap: 20px;">
+        <div
+            style="background: var(--bg-secondary); padding: 8px 15px; border-radius: 8px; font-size: 0.9em; display: flex; gap: 15px; align-items: center; border: 1px solid var(--border-color);">
+            <div>
+                <strong>Today:</strong> <span id="today-minutes">{{ today_minutes }}</span> / <strong>Goal:</strong> {{
+                daily_goal }}m
+            </div>
+            <form action="{% url 'set_daily_goal' subject.id %}" method="post"
+                style="display: flex; gap: 5px; align-items: center; margin: 0;">
+                {% csrf_token %}
+                <input type="number" name="minutes" value="{{ daily_goal }}" style="width: 60px; padding: 4px;" min="0">
+                <button type="submit" class="btn btn-primary btn-sm"
+                    style="padding: 4px 8px; font-size: 0.8em;">Set</button>
+            </form>
+        </div>
+
         <div class="progress-circle" style="--progress: {{ progress }}deg; width: 60px; height: 60px;">
             <div class="progress-inner" style="width: 50px; height: 50px; font-size: 12px;">
                 {{ completed }} / {{ total }}
@@ -80,22 +171,6 @@
     </div>
 </div>
 
-<!-- Daily Goal Section -->
-<div class="goal-card">
-    <div>
-        <strong>Today's Study:</strong> <span id="today-minutes">{{ today_minutes }}</span> mins
-        <span style="color: var(--text-secondary); margin: 0 10px;">/</span>
-        <strong>Goal:</strong> {{ daily_goal }} mins
-    </div>
-    <form action="{% url 'set_daily_goal' subject.id %}" method="post"
-        style="display: flex; gap: 10px; align-items: center;">
-        {% csrf_token %}
-        <input type="number" name="minutes" value="{{ daily_goal }}" style="width: 80px;" min="0">
-        <button type="submit" class="btn btn-primary btn-sm">Set Goal</button>
-    </form>
-</div>
-
-<!-- Add Playlist Section -->
 {% if videos.count == 0 %}
 <div class="card" style="margin-bottom: 20px; background: #fff8c4;">
     <h3>Import Playlist</h3>
@@ -112,7 +187,7 @@
     <div class="video-section" id="video-section">
         <div id="video-player-container" style="margin-bottom: 20px; display: none;">
             <h4 id="playing-info" style="margin-bottom: 10px; color: #d9534f;">Playing: -</h4>
-            <iframe id="main-player" width="100%" height="315" src="" title="YouTube video player" frameborder="0"
+            <iframe id="main-player" width="100%" height="500" src="" title="YouTube video player" frameborder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowfullscreen></iframe>
         </div>
@@ -151,12 +226,15 @@
 
     <!-- Right: Notes -->
     <div class="notes-section" id="notes-section">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-            <h3>Notes</h3>
-            <div style="display:flex; gap:10px;">
-                <button class="btn" onclick="formatDoc('bold')" title="Bold"><b>B</b></button>
-                <button class="btn" onclick="formatDoc('italic')" title="Italic"><i>I</i></button>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+            <div class="note-toggle-container">
+                <button id="btn-content" class="note-toggle-btn active" onclick="switchNoteType('content')">ChatGPT
+                    Response</button>
+                <button id="btn-screenshots" class="note-toggle-btn" onclick="switchNoteType('screenshots')">Lecture
+                    Screenshots</button>
+            </div>
 
+            <div style="display:flex; gap:10px;">
                 <select id="fontSizeSelect" class="btn" onchange="changeFontSize(this.value)"
                     style="padding: 2px 10px; cursor: pointer;">
                     <option value="" disabled selected>Size</option>
@@ -164,17 +242,18 @@
                     <option value="14px">14px</option>
                     <option value="16px">16px</option>
                     <option value="18px">18px</option>
-                    <option value="20px">20px</option>
-                    <option value="24px">24px</option>
-                    <option value="30px">30px</option>
                 </select>
+
                 <button class="btn" onclick="downloadPDF()">Export PDF</button>
             </div>
         </div>
 
-        <!-- Editable Div -->
-        <div id="editor" class="notion-editor" contenteditable="true"
-            placeholder="Type here or paste ChatGPT response with Markdown/LaTeX..."></div>
+        <!-- Editable Divs (Double) -->
+        <div id="editor-content" class="notion-editor active-editor" contenteditable="true"
+            placeholder="Paste ChatGPT notes here (Supports Markdown Code Blocks)..."></div>
+
+        <div id="editor-screenshots" class="notion-editor" contenteditable="true"
+            placeholder="Paste lecture screenshots here..."></div>
 
         <div style="text-align: right; margin-top: 5px;">
             <button class="btn btn-primary" onclick="saveNotes()">Save Notes</button>
@@ -184,46 +263,89 @@
 
 <script>
     const noteId = "{{ note.id }}";
+    let activeNoteType = 'content'; // 'content' or 'screenshots'
 
-    // Initial Load
-    const initialContent = `{{ note.content|escapejs }}`;
-    document.getElementById('editor').innerHTML = initialContent;
+    // Initial Load - Content Injection
+    document.getElementById('editor-content').innerHTML = `{{ note.content|escapejs }}`;
+    document.getElementById('editor-screenshots').innerHTML = `{{ note.content_screenshots|escapejs }}`;
 
-    // Trigger math render on load
-    if (window.MathJax) {
-        MathJax.typesetPromise([document.getElementById('editor')]).then(() => {
-            document.querySelectorAll('mjx-container').forEach(el => el.removeAttribute('tabindex'));
+    function highlightAll() {
+        document.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block);
+        });
+    }
+    highlightAll();
+
+    function switchNoteType(type) {
+        activeNoteType = type;
+        document.querySelectorAll('.note-toggle-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-${type}`).classList.add('active');
+        document.querySelectorAll('.notion-editor').forEach(ed => ed.classList.remove('active-editor'));
+        document.getElementById(`editor-${type}`).classList.add('active-editor');
+    }
+
+    function saveNotes() {
+        const editorFn = activeNoteType === 'content' ? 'editor-content' : 'editor-screenshots';
+        const content = document.getElementById(editorFn).innerHTML;
+
+        fetch(`/core/note/${noteId}/save/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                content: content,
+                note_type: activeNoteType
+            })
+        }).then(() => {
+            alert('Notes Saved!');
         });
     }
 
-    function formatDoc(cmd, value = null) {
-        document.execCommand(cmd, false, value);
-        document.getElementById('editor').focus();
+    // Check & Highlight on Blur
+    document.querySelectorAll('.notion-editor').forEach(editor => {
+        editor.addEventListener('blur', function () {
+            // Apply highlight to any PRE blocks that exist
+            editor.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        });
+
+        // Sanitize paste styles
+        editor.addEventListener('paste', function (e) {
+            setTimeout(() => {
+                editor.querySelectorAll('div, p, span').forEach(el => {
+                    // Remove white backgrounds from paste
+                    if (el.style.backgroundColor === 'rgb(255, 255, 255)' || el.style.backgroundColor === '#ffffff') {
+                        el.style.backgroundColor = '';
+                    }
+                    if (el.style.color === 'rgb(0, 0, 0)') {
+                        el.style.color = '';
+                    }
+                });
+            }, 100);
+        });
+    });
+
+    // --- Helper Functions ---
+    if (window.MathJax) {
+        MathJax.typesetPromise([document.getElementById('editor-content')]).then(() => { });
+        MathJax.typesetPromise([document.getElementById('editor-screenshots')]).then(() => { });
     }
 
     function changeFontSize(size) {
         if (!size) return;
-
         const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-            alert("Please select some text first.");
-            // Reset dropdown to default behavior if needed, generally fine to leave as is
-            return;
-        }
-
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
         const span = document.createElement("span");
         span.style.fontSize = size;
-
         try {
             const range = selection.getRangeAt(0);
             const content = range.extractContents();
             span.appendChild(content);
             range.insertNode(span);
-        } catch (e) {
-            console.error("Could not apply font size", e);
-        }
-
-        // Reset select to "Size" placeholder to allow re-selecting same size if needed
+        } catch (e) { console.error(e); }
         document.getElementById('fontSizeSelect').selectedIndex = 0;
     }
 
@@ -231,10 +353,8 @@
         const container = document.getElementById('video-player-container');
         const player = document.getElementById('main-player');
         const info = document.getElementById('playing-info');
-
         container.style.display = 'block';
         info.innerText = `Playing: Video ${videoNumber}`;
-
         player.setAttribute('referrerPolicy', 'strict-origin-when-cross-origin');
         const origin = window.location.origin;
         player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=${origin}`;
@@ -244,141 +364,70 @@
     function toggleWatched(videoId, checkbox) {
         fetch(`/core/video/${videoId}/status/`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
             body: JSON.stringify({ is_watched: checkbox.checked })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.today_minutes !== undefined) {
-                    document.getElementById('today-minutes').innerText = data.today_minutes;
-                }
-            });
-    }
-
-    function saveNotes() {
-        const content = document.getElementById('editor').innerHTML;
-        fetch(`/core/note/${noteId}/save/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({ content: content })
-        }).then(() => {
-            alert('Notes Saved!');
+        }).then(r => r.json()).then(data => {
+            if (data.today_minutes !== undefined) document.getElementById('today-minutes').innerText = data.today_minutes;
         });
     }
 
+    /* UPDATED PDF EXPORT */
     function downloadPDF() {
         var printWindow = window.open('', '', 'height=600,width=800');
         printWindow.document.write('<html><head><title>Notes Export</title>');
-        printWindow.document.write('<style>body{font-family:sans-serif; padding: 40px;} img {max-width:100%;}</style>');
-        printWindow.document.write('<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"><\/script>');
+
+        // 1. Inject Highlight.js CSS for PDF
+        printWindow.document.write('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">');
+
+        printWindow.document.write('<style>');
+        printWindow.document.write(`
+            @media print {
+                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                pre { background-color: #1E1E1E !important; color: #dcdcdc !important; }
+            }
+            body { font-family: sans-serif; padding: 40px; background: white; color: black; }
+            /* Explicitly dark code blocks for print */
+            pre { 
+                background: #1E1E1E !important; 
+                border-radius: 6px; 
+                padding: 1em; 
+                margin: 1em 0; 
+                white-space: pre-wrap; 
+                color: #dcdcdc;
+            }
+            code { font-family: monospace; }
+            img { max-width:100%; }
+        `);
+        printWindow.document.write('</style>');
+
         printWindow.document.write('</head><body>');
-        printWindow.document.write('<h1>{{ subject.name }} Notes</h1>');
-        printWindow.document.write(document.getElementById('editor').innerHTML);
+        printWindow.document.write('<h1>{{ subject.name }} Notes (' + (activeNoteType === 'content' ? 'Theory' : 'Screenshots') + ')</h1>');
+        printWindow.document.write(document.querySelector('.notion-editor.active-editor').innerHTML);
         printWindow.document.write('</body></html>');
         printWindow.document.close();
 
-        setTimeout(() => {
-            printWindow.print();
-        }, 1500);
+        // Delay to allow CSS to load
+        setTimeout(() => { printWindow.print(); }, 1500);
     }
 
-    function clearNotes() {
-        if (confirm("Are you sure you want to clear all notes?")) {
-            document.getElementById('editor').innerHTML = "";
-            document.getElementById('editor').focus();
-        }
-    }
-
-    function addMarkdown() {
-        const editor = document.getElementById('editor');
-        const text = editor.innerText;
-
-        if (typeof marked === 'undefined') {
-            alert('Markdown library not loaded. Please refresh the page.');
-            return;
-        }
-
-        const mathBlocks = [];
-        let processedText = text.replace(/\$\$([\s\S]+?)\$\$/g, function (match) {
-            mathBlocks.push(match);
-            return `MATH_BLOCK_${mathBlocks.length - 1}`;
-        });
-
-        processedText = processedText.replace(/\$([^\$\n]+?)\$/g, function (match) {
-            mathBlocks.push(match);
-            return `MATH_INLINE_${mathBlocks.length - 1}`;
-        });
-
-        let html = marked.parse(processedText);
-
-        html = html.replace(/MATH_BLOCK_(\d+)/g, function (match, id) {
-            return mathBlocks[parseInt(id)];
-        });
-
-        html = html.replace(/MATH_INLINE_(\d+)/g, function (match, id) {
-            return mathBlocks[parseInt(id)];
-        });
-
-        editor.innerHTML = html;
-
-        if (window.MathJax) {
-            MathJax.typesetPromise([editor]).then(() => {
-                document.querySelectorAll('mjx-container').forEach(el => el.removeAttribute('tabindex'));
-            }).catch(err => {
-                console.error('MathJax Error:', err);
-            });
-        }
-    }
-
-    // Resizable Split View Logic
+    // Split View
     document.addEventListener('DOMContentLoaded', function () {
         const gutter = document.getElementById('drag-gutter');
         const videoSection = document.getElementById('video-section');
         const notesSection = document.getElementById('notes-section');
-        const container = videoSection.parentElement; // .split-view
-
+        const container = videoSection.parentElement;
         let isDragging = false;
-
-        gutter.addEventListener('mousedown', function (e) {
-            isDragging = true;
-            document.body.style.cursor = 'col-resize';
-        });
-
+        gutter.addEventListener('mousedown', function (e) { isDragging = true; document.body.style.cursor = 'col-resize'; });
         document.addEventListener('mousemove', function (e) {
             if (!isDragging) return;
-
             const containerRect = container.getBoundingClientRect();
             let newVideoWidth = e.clientX - containerRect.left - (gutter.offsetWidth / 2);
-
-            // Constraints (min width 200px)
             if (newVideoWidth < 200) newVideoWidth = 200;
             if (newVideoWidth > containerRect.width - 200) newVideoWidth = containerRect.width - 200;
-
-            const newNotesWidth = containerRect.width - newVideoWidth - gutter.offsetWidth;
-
-            // Use flex-basis or width. Flex is better.
-            // Actually, simply setting width in % or flex-grow might be tricky if we don't disable flex-grow.
-            // Let's set flex: none and specific widths, OR use flex-basis.
-
             videoSection.style.flex = `0 0 ${newVideoWidth}px`;
-            notesSection.style.flex = `1 1 auto`; // Notes take remaining
-            // Actually for strict control:
-            // videoSection.style.width = `${newVideoWidth}px`;
-            // videoSection.style.flex = 'none';
+            notesSection.style.flex = `1 1 auto`;
         });
-
-        document.addEventListener('mouseup', function (e) {
-            if (isDragging) {
-                isDragging = false;
-                document.body.style.cursor = 'default';
-            }
-        });
+        document.addEventListener('mouseup', function (e) { if (isDragging) { isDragging = false; document.body.style.cursor = 'default'; } });
     });
 </script>
 {% endblock %}

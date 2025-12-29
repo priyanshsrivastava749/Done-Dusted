@@ -168,7 +168,13 @@ def save_note(request, note_id):
     note = get_object_or_404(Note, id=note_id, subject__exam__user=request.user)
     import json
     data = json.loads(request.body)
-    note.content = data.get('content', '')
+    note_type = data.get('note_type', 'content')
+    
+    if note_type == 'screenshots':
+        note.content_screenshots = data.get('content', '')
+    else:
+        note.content = data.get('content', '')
+        
     note.save()
     return JsonResponse({'status': 'ok'})
 

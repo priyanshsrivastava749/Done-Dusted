@@ -312,9 +312,6 @@ tr:hover td {
     flex: 2;
     overflow-y: auto;
     padding-right: 10px;
-    /* Hide Scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: var(--text-secondary) transparent;
 }
 
 .notes-section {
@@ -455,5 +452,31 @@ tr.watched td:nth-child(2) {
 
 .layout.sidebar-collapsed .sidebar {
     box-shadow: none;
+
     border: none;
+}
+
+/* Custom Green Scrollbar (Global) */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
+}
+
+/* Firefox Standard */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
 }
