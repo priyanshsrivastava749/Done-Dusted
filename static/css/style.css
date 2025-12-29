@@ -458,8 +458,16 @@ tr.watched td:nth-child(2) {
 
 /* Custom Green Scrollbar (Global) */
 ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    /* Thinner vertical scrollbar */
+    height: 0px;
+    /* Hide horizontal scrollbar */
+}
+
+/* Explicitly hide horizontal scrollbar */
+::-webkit-scrollbar:horizontal {
+    height: 0px;
+    display: none;
 }
 
 ::-webkit-scrollbar-track {

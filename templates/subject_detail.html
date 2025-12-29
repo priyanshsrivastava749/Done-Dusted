@@ -498,6 +498,14 @@
         printWindow.document.write('<style>');
         printWindow.document.write(`
             @media print {
+                @page {
+                    margin-bottom: 2cm;
+                    @bottom-center {
+                        content: "Page " counter(page);
+                        font-size: 10pt;
+                        color: #555;
+                    }
+                }
                 body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 pre { background-color: #1E1E1E !important; color: #dcdcdc !important; }
             }
@@ -533,9 +541,17 @@
         const notesSection = document.getElementById('notes-section');
         const container = videoSection.parentElement;
         let isDragging = false;
-        gutter.addEventListener('mousedown', function (e) { isDragging = true; document.body.style.cursor = 'col-resize'; });
+
+        gutter.addEventListener('mousedown', function (e) {
+            isDragging = true;
+            document.body.style.cursor = 'col-resize';
+            // Disable pointer events on iframes to prevent mouse capture
+            document.querySelectorAll('iframe').forEach(iframe => iframe.style.pointerEvents = 'none');
+        });
+
         document.addEventListener('mousemove', function (e) {
             if (!isDragging) return;
+            e.preventDefault(); // Prevent text selection
             const containerRect = container.getBoundingClientRect();
             let newVideoWidth = e.clientX - containerRect.left - (gutter.offsetWidth / 2);
             if (newVideoWidth < 200) newVideoWidth = 200;
@@ -543,7 +559,15 @@
             videoSection.style.flex = `0 0 ${newVideoWidth}px`;
             notesSection.style.flex = `1 1 auto`;
         });
-        document.addEventListener('mouseup', function (e) { if (isDragging) { isDragging = false; document.body.style.cursor = 'default'; } });
+
+        document.addEventListener('mouseup', function (e) {
+            if (isDragging) {
+                isDragging = false;
+                document.body.style.cursor = 'default';
+                // Re-enable pointer events on iframes
+                document.querySelectorAll('iframe').forEach(iframe => iframe.style.pointerEvents = 'auto');
+            }
+        });
     });
 </script>
 {% endblock %}
