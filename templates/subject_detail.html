@@ -140,9 +140,52 @@
         margin: 10px 0;
         cursor: pointer;
     }
+
+    /* --- FLOATING TOOLBAR --- */
+    #floating-toolbar {
+        position: absolute;
+        z-index: 1000;
+        background: #333;
+        border-radius: 4px;
+        padding: 5px;
+        display: none;
+        /* Hidden by default */
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        gap: 5px;
+    }
+
+    #floating-toolbar button {
+        background: transparent;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 5px 10px;
+        font-size: 0.9em;
+        border-radius: 3px;
+        font-weight: 600;
+    }
+
+    #floating-toolbar button:hover {
+        background: #444;
+    }
+
+    #floating-toolbar::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #333 transparent transparent transparent;
+    }
 </style>
 
 <div style="display: flex; justify-content: space-between; align-items: center;">
+    <!-- Floating Toolbar Element -->
+    <div id="floating-toolbar">
+        <button id="btn-mark-code">Code &lt;/&gt;</button>
+    </div>
     <div>
         <a href="{% url 'exam_detail' subject.exam.id %}" style="color: #666;">← Back to {{ subject.exam.name }}</a>
         <h1>{{ subject.name }}</h1>
@@ -151,8 +194,7 @@
         <div
             style="background: var(--bg-secondary); padding: 8px 15px; border-radius: 8px; font-size: 0.9em; display: flex; gap: 15px; align-items: center; border: 1px solid var(--border-color);">
             <div>
-                <strong>Today:</strong> <span id="today-minutes">{{ today_minutes }}</span> / <strong>Goal:</strong> {{
-                daily_goal }}m
+                <strong>Today:</strong> <span id="today-minutes">{{ today_minutes }}</span> / <strong>Goal:</strong> {{ daily_goal }}m
             </div>
             <form action="{% url 'set_daily_goal' subject.id %}" method="post"
                 style="display: flex; gap: 5px; align-items: center; margin: 0;">
@@ -301,7 +343,81 @@
         }).then(() => {
             alert('Notes Saved!');
         });
+
     }
+
+    // --- FLOATING TOOLBAR LOGIC ---
+    const toolbar = document.getElementById('floating-toolbar');
+    const markCodeBtn = document.getElementById('btn-mark-code');
+
+    function updateToolbarPosition() {
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0 || selection.isCollapsed) {
+            toolbar.style.display = 'none';
+            return;
+        }
+
+        const range = selection.getRangeAt(0);
+        // Only show if selection is within an active editor
+        const activeEditor = document.querySelector('.notion-editor.active-editor');
+        if (!activeEditor || !activeEditor.contains(range.commonAncestorContainer)) {
+            toolbar.style.display = 'none';
+            return;
+        }
+
+        const rect = range.getBoundingClientRect();
+
+        // Position above the selection
+        toolbar.style.top = `${rect.top + window.scrollY - 40}px`;
+        toolbar.style.left = `${rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2)}px`;
+        toolbar.style.display = 'flex';
+    }
+
+    // specific events to trigger toolbar update
+    document.addEventListener('mouseup', updateToolbarPosition);
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'Shift' || e.key.startsWith('Arrow')) {
+            updateToolbarPosition();
+        }
+    });
+
+    // Hide on click elsewhere
+    document.addEventListener('mousedown', (e) => {
+        if (!toolbar.contains(e.target)) {
+            // Let the mouseup event handle showing it again if a new selection is made
+            // But if we just click empty space, we want to hide it.
+            // We'll rely on the fact that if a click clears selection, mouseup `selection.isCollapsed` will hide it.
+        }
+    });
+
+    markCodeBtn.addEventListener('click', (e) => {
+        e.preventDefault(); // Prevent losing focus
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+
+        const range = selection.getRangeAt(0);
+        const text = range.toString();
+
+        if (text) {
+            // Create the code block structure
+            // Use <pre><code ...>...</code></pre>
+            // We use a temporary container to facilitate insertion
+            const pre = document.createElement('pre');
+            const code = document.createElement('code');
+            code.textContent = text; // Safely escape HTML
+            pre.appendChild(code);
+
+            range.deleteContents();
+            range.insertNode(pre);
+
+            // Highlight it immediately
+            hljs.highlightElement(code);
+
+            // Clean up: hide toolbar
+            toolbar.style.display = 'none';
+            window.getSelection().removeAllRanges();
+        }
+    });
 
     // Check & Highlight on Blur
     document.querySelectorAll('.notion-editor').forEach(editor => {
@@ -401,7 +517,7 @@
         printWindow.document.write('</style>');
 
         printWindow.document.write('</head><body>');
-        printWindow.document.write('<h1>{{ subject.name }} Notes (' + (activeNoteType === 'content' ? 'Theory' : 'Screenshots') + ')</h1>');
+        printWindow.document.write('<h1>{{ subject.name|escapejs }} Notes (' + (activeNoteType === 'content' ? 'Theory' : 'Screenshots') + ')</h1>');
         printWindow.document.write(document.querySelector('.notion-editor.active-editor').innerHTML);
         printWindow.document.write('</body></html>');
         printWindow.document.close();
