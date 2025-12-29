@@ -6,6 +6,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+
 <style>
     /* Toggle Switch Styles */
     .note-toggle-container {
@@ -194,7 +195,8 @@
         <div
             style="background: var(--bg-secondary); padding: 8px 15px; border-radius: 8px; font-size: 0.9em; display: flex; gap: 15px; align-items: center; border: 1px solid var(--border-color);">
             <div>
-                <strong>Today:</strong> <span id="today-minutes">{{ today_minutes }}</span> / <strong>Goal:</strong> {{ daily_goal }}m
+                <strong>Today:</strong> <span id="today-minutes">{{ today_minutes }}</span> / <strong>Goal:</strong> {{
+                daily_goal }}m
             </div>
             <form action="{% url 'set_daily_goal' subject.id %}" method="post"
                 style="display: flex; gap: 5px; align-items: center; margin: 0;">
@@ -227,13 +229,6 @@
 <div class="split-view">
     <!-- Left: Video Player & List -->
     <div class="video-section" id="video-section">
-        <div id="video-player-container" style="margin-bottom: 20px; display: none;">
-            <h4 id="playing-info" style="margin-bottom: 10px; color: #d9534f;">Playing: -</h4>
-            <iframe id="main-player" width="100%" height="500" src="" title="YouTube video player" frameborder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen></iframe>
-        </div>
-
         <table>
             <thead>
                 <tr>
@@ -251,8 +246,8 @@
                     <td>{{ video.title }}</td>
                     <td style="color: #666; font-size: 0.9em;">{{ video.duration_display }}</td>
                     <td>
-                        <button type="button" class="btn"
-                            onclick="playVideo('{{ video.video_id }}', '{{ forloop.counter }}'); return false;">Play</button>
+                        <a href="https://www.youtube.com/watch?v={{ video.video_id }}" target="_blank"
+                            class="btn btn-sm btn-primary">Watch on YouTube</a>
                     </td>
                     <td>
                         <input type="checkbox" onchange="toggleWatched('{{ video.id }}', this)" {% if video.is_watched %}checked{% endif %}>
@@ -304,6 +299,9 @@
 </div>
 
 <script>
+    console.log("===== SUBJECT_DETAIL.HTML SCRIPT LOADED =====");
+    console.log("YT API available?", typeof YT !== 'undefined');
+
     const noteId = "{{ note.id }}";
     let activeNoteType = 'content'; // 'content' or 'screenshots'
 
@@ -465,17 +463,8 @@
         document.getElementById('fontSizeSelect').selectedIndex = 0;
     }
 
-    function playVideo(videoId, videoNumber) {
-        const container = document.getElementById('video-player-container');
-        const player = document.getElementById('main-player');
-        const info = document.getElementById('playing-info');
-        container.style.display = 'block';
-        info.innerText = `Playing: Video ${videoNumber}`;
-        player.setAttribute('referrerPolicy', 'strict-origin-when-cross-origin');
-        const origin = window.location.origin;
-        player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=${origin}`;
-        window.scrollTo(0, 0);
-    }
+    // Global reference for the player
+
 
     function toggleWatched(videoId, checkbox) {
         fetch(`/core/video/${videoId}/status/`, {

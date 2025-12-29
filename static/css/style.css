@@ -59,6 +59,7 @@ a {
 .layout {
     display: flex;
     height: 100vh;
+    overflow-x: hidden;
 }
 
 /* Sidebar - Glassmorphism */
@@ -97,6 +98,7 @@ a {
     flex: 1;
     padding: 30px 50px;
     overflow-y: auto;
+    overflow-x: hidden;
     background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
     position: relative;
     /* For absolute positioning of toggle button */
@@ -467,7 +469,9 @@ tr.watched td:nth-child(2) {
 /* Explicitly hide horizontal scrollbar */
 ::-webkit-scrollbar:horizontal {
     height: 0px;
-    display: none;
+    width: 0px;
+    display: none !important;
+    background: transparent !important;
 }
 
 ::-webkit-scrollbar-track {
@@ -477,6 +481,11 @@ tr.watched td:nth-child(2) {
 ::-webkit-scrollbar-thumb {
     background: var(--accent);
     border-radius: 3px;
+}
+
+/* Ensure horizontal thumb is also hidden if it somehow appears */
+::-webkit-scrollbar-thumb:horizontal {
+    background: transparent !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
