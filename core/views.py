@@ -204,3 +204,25 @@ def save_common_note(request):
     note.content = data.get('content', '')
     note.save()
     return JsonResponse({'status': 'ok'})
+
+@require_POST
+@login_required
+def delete_exam(request, exam_id):
+    exam = get_object_or_404(Exam, id=exam_id, user=request.user)
+    exam.delete()
+    return redirect('dashboard')
+
+@require_POST
+@login_required
+def delete_subject(request, subject_id):
+    subject = get_object_or_404(Subject, id=subject_id, exam__user=request.user)
+    exam_id = subject.exam.id
+    subject.delete()
+    return redirect('exam_detail', exam_id=exam_id)
+
+@require_POST
+@login_required
+def delete_playlist(request, subject_id):
+    subject = get_object_or_404(Subject, id=subject_id, exam__user=request.user)
+    subject.videos.all().delete()
+    return redirect('subject_detail', subject_id=subject.id)

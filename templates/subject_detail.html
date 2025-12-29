@@ -226,43 +226,61 @@
 </div>
 {% endif %}
 
-<div class="split-view">
-    <!-- Left: Video Player & List -->
-    <div class="video-section" id="video-section">
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 50px;">#</th>
-                    <th>Title</th>
-                    <th style="width: 100px;">Duration</th>
-                    <th style="width: 80px;">Action</th>
-                    <th style="width: 50px;">Done</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for video in videos %}
-                <tr class="{% if video.is_watched %}watched{% endif %}">
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ video.title }}</td>
-                    <td style="color: #666; font-size: 0.9em;">{{ video.duration_display }}</td>
-                    <td>
-                        <a href="https://www.youtube.com/watch?v={{ video.video_id }}" target="_blank"
-                            class="btn btn-sm btn-primary">Watch on YouTube</a>
-                    </td>
-                    <td>
-                        <input type="checkbox" onchange="toggleWatched('{{ video.id }}', this)" {% if video.is_watched %}checked{% endif %}>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<!-- View Toggle -->
+<div class="view-toggle-container">
+    <button class="view-toggle-btn active" id="toggle-checklist" onclick="switchMainView('checklist')">
+        📹 Video Checklist
+    </button>
+    <button class="view-toggle-btn" id="toggle-notes" onclick="switchMainView('notes')">
+        📝 Notes
+    </button>
+</div>
+
+<!-- Video Checklist View -->
+<div id="view-checklist" class="full-width-section">
+    {% if videos.count > 0 %}
+    <div style="text-align: right; margin-bottom: 10px;">
+        <button onclick="confirmDelete('{% url 'delete_playlist' subject.id %}', 'Playlist')" class="btn"
+            style="background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 5px 10px; font-size: 0.8em;"
+            title="Delete All Videos">🗑️ Delete Playlist</button>
     </div>
+    {% endif %}
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 50px;">#</th>
+                <th>Title</th>
+                <th style="width: 100px;">Duration</th>
+                <th style="width: 150px;">Action</th>
+                <th style="width: 50px;">Done</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for video in videos %}
+            <tr class="{% if video.is_watched %}watched{% endif %}">
+                <td>{{ forloop.counter }}</td>
+                <td>{{ video.title }}</td>
+                <td style="color: #666; font-size: 0.9em;">{{ video.duration_display }}</td>
+                <td>
+                    <a href="https://www.youtube.com/watch?v={{ video.video_id }}" target="_blank"
+                        class="btn btn-sm btn-primary btn-youtube">Watch</a>
+                </td>
+                <td>
+                    <input type="checkbox" onchange="toggleWatched('{{ video.id }}', this)" {% if video.is_watched %}checked{% endif %}>
 
-    <!-- Drag Gutter -->
-    <div id="drag-gutter" class="gutter"></div>
 
-    <!-- Right: Notes -->
-    <div class="notes-section" id="notes-section">
+
+
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Notes View -->
+<div id="view-notes" class="full-width-section" style="display: none;">
+    <div class="notes-container">
         <div style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
             <div class="note-toggle-container">
                 <button id="btn-content" class="note-toggle-btn active" onclick="switchNoteType('content')">ChatGPT
@@ -523,40 +541,23 @@
         setTimeout(() => { printWindow.print(); }, 1500);
     }
 
-    // Split View
-    document.addEventListener('DOMContentLoaded', function () {
-        const gutter = document.getElementById('drag-gutter');
-        const videoSection = document.getElementById('video-section');
-        const notesSection = document.getElementById('notes-section');
-        const container = videoSection.parentElement;
-        let isDragging = false;
+    // View Switching Logic
+    function switchMainView(viewName) {
+        // Toggles
+        document.querySelectorAll('.view-toggle-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`toggle-${viewName}`).classList.add('active');
 
-        gutter.addEventListener('mousedown', function (e) {
-            isDragging = true;
-            document.body.style.cursor = 'col-resize';
-            // Disable pointer events on iframes to prevent mouse capture
-            document.querySelectorAll('iframe').forEach(iframe => iframe.style.pointerEvents = 'none');
-        });
+        // Views
+        const checklist = document.getElementById('view-checklist');
+        const notes = document.getElementById('view-notes');
 
-        document.addEventListener('mousemove', function (e) {
-            if (!isDragging) return;
-            e.preventDefault(); // Prevent text selection
-            const containerRect = container.getBoundingClientRect();
-            let newVideoWidth = e.clientX - containerRect.left - (gutter.offsetWidth / 2);
-            if (newVideoWidth < 200) newVideoWidth = 200;
-            if (newVideoWidth > containerRect.width - 200) newVideoWidth = containerRect.width - 200;
-            videoSection.style.flex = `0 0 ${newVideoWidth}px`;
-            notesSection.style.flex = `1 1 auto`;
-        });
-
-        document.addEventListener('mouseup', function (e) {
-            if (isDragging) {
-                isDragging = false;
-                document.body.style.cursor = 'default';
-                // Re-enable pointer events on iframes
-                document.querySelectorAll('iframe').forEach(iframe => iframe.style.pointerEvents = 'auto');
-            }
-        });
-    });
+        if (viewName === 'checklist') {
+            checklist.style.display = 'block';
+            notes.style.display = 'none';
+        } else {
+            checklist.style.display = 'none';
+            notes.style.display = 'block';
+        }
+    }
 </script>
 {% endblock %}

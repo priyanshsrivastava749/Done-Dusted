@@ -23,10 +23,15 @@
 
 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
     {% for exam in exams %}
-    <a href="{% url 'exam_detail' exam.id %}" class="card" style="display: block; color: inherit;">
-        <h3>{{ exam.name }}</h3>
-        <p>{{ exam.subjects.count }} Subjects</p>
-    </a>
+    <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+        <a href="{% url 'exam_detail' exam.id %}" style="text-decoration: none; color: inherit; flex-grow: 1;">
+            <h3>{{ exam.name }}</h3>
+            <p>{{ exam.subjects.count }} Subjects</p>
+        </a>
+        <button onclick="confirmDelete('{% url 'delete_exam' exam.id %}', 'Exam')" class="btn"
+            style="background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 5px 10px;"
+            title="Delete Exam">🗑️</button>
+    </div>
     {% empty %}
     <p>No goals set yet. Start by creating one!</p>
     {% endfor %}

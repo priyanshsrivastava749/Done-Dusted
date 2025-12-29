@@ -171,6 +171,28 @@ h3 {
     background: #d81b60;
 }
 
+/* YouTube Button Glassmorphism */
+.btn-youtube {
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.05);
+    /* Subtle start */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.btn-youtube:hover {
+    background: rgba(29, 185, 84, 0.15);
+    /* Green tint */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(29, 185, 84, 0.4), inset 0 0 10px rgba(29, 185, 84, 0.1);
+    color: #ffffff;
+    transform: translateY(-2px) scale(1.05);
+    text-shadow: 0 0 5px rgba(29, 185, 84, 0.5);
+}
+
 /* Cards - Glassmorphism */
 .card {
     background: var(--card-bg);
@@ -284,47 +306,53 @@ tr:hover td {
 }
 
 /* Split View (Video + Notes) */
-.split-view {
+/* Main View Toggle */
+.view-toggle-container {
     display: flex;
-    gap: 0;
-    /* Removing gap, using gutter */
-    height: calc(100vh - 120px);
-    /* Adjust for header/padding */
+    background: var(--bg-secondary);
+    padding: 5px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    gap: 10px;
+    border: 1px solid var(--border-color);
+    width: fit-content;
 }
 
-.gutter {
-    width: 10px;
+.view-toggle-btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
     background: transparent;
-    cursor: col-resize;
-    transition: background 0.2s;
-    flex-shrink: 0;
-    z-index: 5;
-    margin: 0 10px;
-    /* Visual spacing */
-    border-radius: 5px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 15px;
 }
 
-.gutter:hover,
-.gutter:active {
-    background: var(--accent);
-    /* Highlight on hover/drag */
+.view-toggle-btn:hover {
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.05);
 }
 
-.video-section {
-    flex: 2;
-    overflow-y: auto;
-    padding-right: 10px;
+.view-toggle-btn.active {
+    background: var(--card-bg);
+    color: var(--accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.notes-section {
-    flex: 1.5;
-    display: flex;
-    flex-direction: column;
+/* Full Width Sections */
+.full-width-section {
+    width: 100%;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.notes-container {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: var(--shadow-sm);
+    border-radius: 12px;
+    padding: 30px;
+    min-height: 60vh;
 }
 
 /* Note Editor overrides */
