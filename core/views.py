@@ -93,7 +93,8 @@ def subject_detail(request, subject_id):
         'total': total,
         'completed': completed,
         'today_minutes': today_minutes,
-        'daily_goal': subject.daily_goal_minutes
+        'daily_goal': subject.daily_goal_minutes,
+        'remaining_goal': max(0, subject.daily_goal_minutes - today_minutes)
     })
 
 @login_required
@@ -153,9 +154,12 @@ def update_video_status(request, video_id):
     
     daily_log.save()
     
+    today_minutes = round(daily_log.seconds_watched / 60, 1)
+    
     return JsonResponse({
         'status': 'ok', 
-        'today_minutes': round(daily_log.seconds_watched / 60, 1)
+        'today_minutes': today_minutes,
+        'remaining_goal': max(0, video.subject.daily_goal_minutes - today_minutes)
     })
 
 @require_POST

@@ -37,6 +37,14 @@ class Video(models.Model):
     class Meta:
         ordering = ['order']
 
+    @property
+    def duration_display(self):
+        minutes = self.duration_seconds // 60
+        seconds = self.duration_seconds % 60
+        if seconds > 0:
+            return f"{minutes}m {seconds}s"
+        return f"{minutes}m"
+
     def __str__(self):
         return self.title
 

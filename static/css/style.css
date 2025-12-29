@@ -72,6 +72,15 @@ a {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     z-index: 10;
+    transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+    overflow: hidden;
+}
+
+.layout.sidebar-collapsed .sidebar {
+    width: 0;
+    padding: 0;
+    opacity: 0;
+    border: none;
 }
 
 .sidebar h3 {
@@ -80,6 +89,8 @@ a {
     letter-spacing: -0.5px;
     color: var(--text-primary);
     margin-bottom: 30px;
+    white-space: nowrap;
+    /* Prevent text wrapping when closing */
 }
 
 .main-content {
@@ -87,6 +98,8 @@ a {
     padding: 30px 50px;
     overflow-y: auto;
     background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    position: relative;
+    /* For absolute positioning of toggle button */
 }
 
 /* Headings */
@@ -271,9 +284,28 @@ tr:hover td {
 /* Split View (Video + Notes) */
 .split-view {
     display: flex;
-    gap: 30px;
+    gap: 0;
+    /* Removing gap, using gutter */
     height: calc(100vh - 120px);
     /* Adjust for header/padding */
+}
+
+.gutter {
+    width: 10px;
+    background: transparent;
+    cursor: col-resize;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    z-index: 5;
+    margin: 0 10px;
+    /* Visual spacing */
+    border-radius: 5px;
+}
+
+.gutter:hover,
+.gutter:active {
+    background: var(--accent);
+    /* Highlight on hover/drag */
 }
 
 .video-section {
@@ -386,4 +418,42 @@ tr.watched td:nth-child(2) {
 .theme-toggle-btn:hover {
     background: var(--bg-secondary);
     transform: rotate(15deg);
+}
+
+/* Sidebar Toggle Button */
+.btn-sidebar-toggle {
+    position: fixed;
+    top: 22px;
+    /* Align with title */
+    z-index: 100;
+    padding: 4px 8px;
+    /* Smaller padding to fit */
+    font-size: 20px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    left: 175px;
+    /* Nearer to title "Done-Dusted" */
+    transition: left 0.3s ease;
+    color: var(--text-primary);
+}
+
+/* When collapsed, move button to left */
+.layout.sidebar-collapsed .btn-sidebar-toggle {
+    left: 20px;
+}
+
+/* Green Halo for Sidebar */
+.sidebar {
+    /* Existing properties... we need to make sure we don't overwrite important ones if we are appending */
+    /* Wait, I can't append to a random place. I should have added this to the .sidebar block earlier. */
+    /* Instead, I'll add a specific rule here that cascades. */
+    box-shadow: 0 0 15px rgba(29, 185, 84, 0.2);
+    /* Greenish Halo */
+    /* border-right removed as per user request */
+}
+
+.layout.sidebar-collapsed .sidebar {
+    box-shadow: none;
+    border: none;
 }

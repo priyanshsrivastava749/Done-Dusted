@@ -77,10 +77,26 @@
         {% endif %}
 
         <main class="main-content">
+            {% if user.is_authenticated %}
+            <button id="sidebar-toggle" class="btn btn-sidebar-toggle">
+                &#9776;
+            </button>
+            {% endif %}
             {% block content %}
             {% endblock %}
         </main>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function () {
+                    document.querySelector('.layout').classList.toggle('sidebar-collapsed');
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>
