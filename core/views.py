@@ -74,6 +74,9 @@ def subject_detail(request, subject_id):
     subject = get_object_or_404(Subject, id=subject_id, exam__user=request.user)
     videos = subject.videos.all()
     note, created = Note.objects.get_or_create(subject=subject)
+    # Load content from file (files are source of truth now)
+    note.content = note.get_content_from_file()
+    note.content_screenshots = note.get_screenshots_from_file()
     
     # Calculate progress
     total = videos.count()
@@ -171,11 +174,11 @@ def save_note(request, note_id):
     note_type = data.get('note_type', 'content')
     
     if note_type == 'screenshots':
-        note.content_screenshots = data.get('content', '')
+        note.save_screenshots_to_file(data.get('content', ''))
     else:
-        note.content = data.get('content', '')
+        note.save_content_to_file(data.get('content', ''))
         
-    note.save()
+    note.save() # Update timestamp
     return JsonResponse({'status': 'ok'})
 
 @require_POST
@@ -193,6 +196,8 @@ def set_daily_goal(request, subject_id):
 @login_required
 def common_note_view(request):
     note, created = CommonNote.objects.get_or_create(user=request.user)
+    # Load content from file
+    note.content = note.get_content_from_file()
     return render(request, 'common_note.html', {'note': note})
 
 @require_POST
@@ -201,8 +206,8 @@ def save_common_note(request):
     note, created = CommonNote.objects.get_or_create(user=request.user)
     import json
     data = json.loads(request.body)
-    note.content = data.get('content', '')
-    note.save()
+    note.save_content_to_file(data.get('content', ''))
+    note.save() # Update timestamp
     return JsonResponse({'status': 'ok'})
 
 @require_POST

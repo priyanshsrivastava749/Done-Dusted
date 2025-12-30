@@ -131,6 +131,13 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Increase request body size limit to 50MB to support large notes (1000+ pages)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800 # 50 MB
+
+
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
