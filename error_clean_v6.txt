@@ -1,0 +1,1 @@
+Template: C:\Users\HP\Desktop\Done-Dusted\templates\subject_detail.html, Invalid block tag on line 299: 'endif', expected 'empty' or 'endfor'. Did you forget to register or load this tag?

@@ -14,6 +14,7 @@ urlpatterns = [
     path('subject/<int:subject_id>/set_goal/', views.set_daily_goal, name='set_daily_goal'),
     path('video/<int:video_id>/status/', views.update_video_status, name='update_video_status'),
     path('note/<int:note_id>/save/', views.save_note, name='save_note'),
+    path('note/<int:note_id>/content/', views.get_note_content, name='get_note_content'),
     path('common-notes/', views.common_note_view, name='common_note'),
     path('common-notes/save/', views.save_common_note, name='save_common_note'),
     path('exam/<int:exam_id>/delete/', views.delete_exam, name='delete_exam'),

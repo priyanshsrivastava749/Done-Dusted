@@ -2,11 +2,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse, HttpResponse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from .models import Exam, Subject, Video, Note, UserProfile, DailyStudyLog, CommonNote
 from .utils import fetch_playlist_items
+import os
 
 def register(request):
     if request.method == 'POST':
@@ -70,17 +71,31 @@ def exam_detail(request, exam_id):
     return render(request, 'exam_detail.html', {'exam': exam, 'subjects': subjects})
 
 @login_required
+def get_note_content(request, note_id):
+    note = get_object_or_404(Note, id=note_id, subject__exam__user=request.user)
+    note_type = request.GET.get('type', 'content')
+    
+    if note_type == 'screenshots':
+        file_path = note.get_screenshots_file_path()
+    else:
+        file_path = note.get_file_path()
+        
+    if os.path.exists(file_path):
+        return FileResponse(open(file_path, 'rb'))
+    return HttpResponse("")
+
+@login_required
 def subject_detail(request, subject_id):
     subject = get_object_or_404(Subject, id=subject_id, exam__user=request.user)
-    videos = subject.videos.all()
-    note, created = Note.objects.get_or_create(subject=subject)
-    # Load content from file (files are source of truth now)
-    note.content = note.get_content_from_file()
-    note.content_screenshots = note.get_screenshots_from_file()
     
-    # Calculate progress
-    total = videos.count()
-    completed = videos.filter(is_watched=True).count()
+    # Optimize: Fetch all videos once, calculate stats in python
+    videos = list(subject.videos.all()) 
+    total = len(videos)
+    completed = sum(1 for v in videos if v.is_watched)
+    
+    note, created = Note.objects.get_or_create(subject=subject)
+    # CONTENT LOAD REMOVED - Handled by lazy loading via get_note_content
+    
     progress = (completed / total * 360) if total > 0 else 0
     
     # Daily Progress
