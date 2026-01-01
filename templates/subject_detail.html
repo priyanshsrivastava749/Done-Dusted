@@ -142,6 +142,35 @@
         cursor: pointer;
     }
 
+    /* --- MATHJAX OPTIMIZATION --- */
+    /* Force MathJax to respect container bounds and font size */
+    .notion-editor mjx-container {
+        font-size: 110% !important;
+        /* Slight boost but not giant */
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-width: 100%;
+        vertical-align: middle;
+    }
+
+    .notion-editor mjx-container svg {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Reset any massive inline headers people might paste */
+    .notion-editor h1 {
+        font-size: 1.8em !important;
+    }
+
+    .notion-editor h2 {
+        font-size: 1.5em !important;
+    }
+
+    .notion-editor h3 {
+        font-size: 1.3em !important;
+    }
+
     /* --- FLOATING TOOLBAR --- */
     #floating-toolbar {
         position: absolute;
@@ -215,7 +244,7 @@
     </div>
 </div>
 
-{% if videos.count == 0 %}
+{% if videos|length == 0 %}
 <div class="card" style="margin-bottom: 20px; background: #fff8c4;">
     <h3>Import Playlist</h3>
     <form action="{% url 'add_playlist' subject.id %}" method="post">
@@ -238,7 +267,7 @@
 
 <!-- Video Checklist View -->
 <div id="view-checklist" class="full-width-section">
-    {% if videos.count > 0 %}
+    {% if videos|length > 0 %}
     <div style="text-align: right; margin-bottom: 10px;">
         <button onclick="confirmDelete('{% url 'delete_playlist' subject.id %}', 'Playlist')" class="btn"
             style="background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 5px 10px; font-size: 0.8em;"
@@ -324,8 +353,39 @@
     let activeNoteType = 'content'; // 'content' or 'screenshots'
 
     // Initial Load - Content Injection
-    document.getElementById('editor-content').innerHTML = `{{ note.content|escapejs }}`;
-    document.getElementById('editor-screenshots').innerHTML = `{{ note.content_screenshots|escapejs }}`;
+    // Initial Load - Content Injection via Lazy Loading
+    async function loadNoteContent(type) {
+        const editorId = type === 'content' ? 'editor-content' : 'editor-screenshots';
+        const editor = document.getElementById(editorId);
+        editor.innerHTML = '<div style="color: #888; padding: 20px;">Loading notes...</div>';
+
+        try {
+            const response = await fetch(`/core/note/${noteId}/content/?type=${type}`);
+            if (response.ok) {
+                const text = await response.text();
+                editor.innerHTML = text;
+
+                // Re-highlight and Typeset
+                if (window.MathJax) {
+                    MathJax.typesetPromise([editor]).then(() => { });
+                }
+                editor.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+
+                // --- Auto-Sanitize on Load ---
+                setTimeout(() => sanitizeEditor(editor), 100);
+            } else {
+                editor.innerHTML = '';
+            }
+        } catch (error) {
+            console.error('Error loading notes:', error);
+            editor.innerHTML = '<div style="color: red; padding: 20px;">Error loading notes.</div>';
+        }
+    }
+
+    loadNoteContent('content');
+    loadNoteContent('screenshots');
 
     function highlightAll() {
         document.querySelectorAll('pre code').forEach((block) => {
@@ -435,6 +495,41 @@
         }
     });
 
+    // --- Sanitize / Optimize Logic ---
+    function sanitizeEditor(editor) {
+        if (!editor) return;
+
+        // 1. Strip unwanted inline styles from ALL elements
+        editor.querySelectorAll('*').forEach(el => {
+            // Remove fixed font sizes, especially giant ones or 'pt' values
+            if (el.style.fontSize) {
+                el.style.fontSize = '';
+                el.removeAttribute('data-font-size'); // classic Notion/garbage attr
+            }
+
+            // Remove fixed backgrounds (often white from ChatGPT)
+            if (el.style.backgroundColor) {
+                el.style.backgroundColor = '';
+            }
+
+            // Remove fixed colors (often black text on dark mode)
+            if (el.style.color) {
+                el.style.color = '';
+            }
+
+            // Clean specific tags
+            if (el.tagName === 'MJX-CONTAINER' || el.tagName === 'SVG') {
+                el.style = ""; // Wipe all inline styles from MathJax
+                el.setAttribute('style', '');
+            }
+        });
+
+        // 2. Normalize Headings
+        editor.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(h => {
+            h.style.fontSize = ''; // Let CSS control it
+        });
+    }
+
     // Check & Highlight on Blur
     document.querySelectorAll('.notion-editor').forEach(editor => {
         editor.addEventListener('blur', function () {
@@ -446,17 +541,10 @@
 
         // Sanitize paste styles
         editor.addEventListener('paste', function (e) {
+            // we'll rely on the timeout to clean up AFTER paste
             setTimeout(() => {
-                editor.querySelectorAll('div, p, span').forEach(el => {
-                    // Remove white backgrounds from paste
-                    if (el.style.backgroundColor === 'rgb(255, 255, 255)' || el.style.backgroundColor === '#ffffff') {
-                        el.style.backgroundColor = '';
-                    }
-                    if (el.style.color === 'rgb(0, 0, 0)') {
-                        el.style.color = '';
-                    }
-                });
-            }, 100);
+                sanitizeEditor(editor);
+            }, 50); // Fast cleanup
         });
     });
 
