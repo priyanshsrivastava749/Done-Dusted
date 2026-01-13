@@ -1,86 +1,152 @@
-# Done-Dusted
+# Done-Dusted 🎯
 
-Done-Dusted is a Django-based application for managing notes and educational video content. This project allows users to organize subjects, chapters, and topics, linking them with relevant video resources and personal notes.
+**Done-Dusted** is a productivity and video tracking application designed to help users manage their study goals, track video progress, and maintain consistency through analytics and streaks. It allows users to create goals, mark videos as completed, and stay focused using a built-in timer.
 
-## Features
-- **Subject & Chapter Management**: Organize educational content hierarchically.
-- **Video Integration**: Link and manage YouTube videos for topics.
-- **Note Taking**: Rich text support for creating and saving notes locally.
-- **Simulation Hub**: Interactive physics simulations.
+---
 
-## Prerequisites
-Before you begin, ensure you have the following installed on your system:
-- **Python 3.8+**
-- **Git**
+## 🚀 Project Overview
 
-## Installation
+This project helps students and learners:
+- **Track Progress**: Monitor completion status of video courses.
+- **Set Goals**: Create daily study targets and track hours.
+- **Analyze Performance**: View detailed analytics and study streaks.
+- **Stay Focused**: Use a built-in focus timer (Pomodoro-style) to log deep work sessions.
+- **Smart Notes**: Generate AI-powered notes for videos (integrated with Google Gemini).
+
+---
+
+## 🛠️ Tech Stack
+
+- **Backend**: Django (Python)
+- **Database**: SQLite (Default)
+- **Frontend**: HTML5, CSS3 (Vanilla), JavaScript
+- **API Integration**: Google API Client (YouTube/Gemini)
+
+---
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have the following installed:
+- **Python** (v3.8 or higher)
+- **pip** (Python package installer)
+- **Git** (for version control)
+
+---
+
+## ⚡ Installation Steps
 
 Follow these steps to set up the project locally.
 
 ### 1. Clone the Repository
-Open your terminal or command prompt and run:
+Open your terminal and run:
 ```bash
-git clone https://github.com/priyanshsrivastava749/Done-Dusted.git
+git clone <repository-url>
 cd Done-Dusted
 ```
 
-### 2. Create and Activate Virtual Environment
+### 2. Create Virtual Environment
 It is recommended to use a virtual environment to manage dependencies.
 
 **Windows:**
 ```bash
 python -m venv venv
-.\venv\Scripts\activate
+venv\Scripts\activate
 ```
 
-**macOS/Linux:**
+**macOS / Linux:**
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
 ### 3. Install Dependencies
-Install the required Python packages listed in `requirements.txt`:
+Install all required Python packages:
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Database Setup
-Apply the database migrations to set up the database schema:
+### 4. Environment Setup
+Create a `.env` file in the root directory (where `manage.py` is located) to store sensitive keys:
+
+```ini
+# .env file
+SECRET_KEY=your_django_secret_key
+DEBUG=True
+GOOGLE_API_KEY=your_google_api_key
+```
+> **Note**: You need a Google API Key for video tracking and AI features.
+
+### 5. Database Setup
+Initialize the database tables:
 ```bash
-python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 5. Create Superuser (Optional)
-To access the Django admin panel, creating a superuser is recommended:
+(Optional) Create an admin user to access the Django Admin panel:
 ```bash
 python manage.py createsuperuser
 ```
-Follow the prompts to set a username, email, and password.
 
-### 6. Run the Development Server
-Start the server to use the application:
+### 6. Run the Server
+Start the local development server:
 ```bash
 python manage.py runserver
 ```
 
-Once the server is running, open your browser and access the application at:
-[http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+Open your browser and navigate to:
+`http://127.0.0.1:8000/`
 
-To access the Admin Panel, go to:
-[http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)
+---
 
-## Troubleshooting
-- **Port already in use**: If port 8000 is taken, run on a different port:
-  ```bash
-  python manage.py runserver 8080
-  ```
-- **Virtual Environment**: Ensure your virtual environment is activated (you should see `(venv)` in your terminal prompt) before running `pip install` or `python manage.py` commands.
+## 📖 Usage
 
-## Contributing
-1.  Fork the repository.
-2.  Create your feature branch (`git checkout -b feature/AmazingFeature`).
-3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4.  Push to the branch (`git push origin feature/AmazingFeature`).
-5.  Open a Pull Request.
+1. **Dashboard**: Upon logging in, you will see your daily streaks and active goals.
+2. **Add Goals/Exams**: Use the "+ New Goal" button to create a new subject or exam to track.
+3. **Track Videos**: Go to a subject page and paste a YouTube playlist URL (if supported) or manually add videos.
+4. **Mark as Done**: Click the checkbox next to a video to mark it as completed. Your progress bar will update automatically.
+5. **Focus Timer**: Use the timer widget at the bottom right to track your study sessions.
+
+---
+
+## 📂 Folder Structure
+
+Here is a quick overview of the main folders:
+
+```
+Done-Dusted/
+├── core/                 # Main application logic (views, models, urls)
+├── done_dusted/          # Project configuration (settings.py, wsgi.py)
+├── static/               # Static assets (CSS, JS, Images)
+├── templates/            # HTML Templates
+├── db.sqlite3            # Database file
+├── manage.py             # Django command-line utility
+└── requirements.txt      # Project dependencies
+```
+
+---
+
+## 🔧 Common Errors & Fixes
+
+**1. `ModuleNotFoundError`**
+- **Cause**: Dependencies are not installed or virtual environment is not active.
+- **Fix**: Activate venv and run `pip install -r requirements.txt`.
+
+**2. `TemplateSyntaxError`**
+- **Cause**: Issues with HTML template tags.
+- **Fix**: Check recent changes in `templates/` folder or ensure all `{% block %}` tags are closed.
+
+**3. Database Issues (no tables)**
+- **Cause**: Migrations not applied.
+- **Fix**: Run `python manage.py migrate`.
+
+---
+
+## 🔮 Future Improvements
+
+- [ ] Add dark mode toggle.
+- [ ] Integration with more video platforms.
+- [ ] Mobile-responsive app version.
+- [ ] Advanced graphical analytics.
+
+---
+*Happy Coding!* 🚀
