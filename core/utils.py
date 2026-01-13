@@ -105,3 +105,64 @@ def fetch_playlist_items(playlist_url, api_key):
             return None
             
     return videos
+
+def fetch_video_details(video_url, api_key):
+    """
+    Fetches details for a single video.
+    Returns dict: {'title':, 'video_id':, 'duration':}
+    """
+    import re
+    # Extract Video ID
+    # Supports: youtube.com/watch?v=ID, youtu.be/ID
+    video_id = None
+    if "youtube.com" in video_url:
+        if "v=" in video_url:
+            video_id = video_url.split("v=")[1].split("&")[0]
+    elif "youtu.be" in video_url:
+        video_id = video_url.split("/")[-1].split("?")[0]
+        
+    if not video_id:
+        return None
+
+    api_url = "https://www.googleapis.com/youtube/v3/videos"
+    params = {
+        'part': 'snippet,contentDetails',
+        'id': video_id,
+        'key': api_key
+    }
+    
+    try:
+        response = requests.get(api_url, params=params)
+        data = response.json()
+        
+        if 'items' not in data or not data['items']:
+            return None
+            
+        item = data['items'][0]
+        snippet = item['snippet']
+        content_details = item['contentDetails']
+        
+        # Parse Duration
+        def parse_duration(duration_str):
+             match = re.match(
+                r'PT((?P<hours>\d+)H)?((?P<minutes>\d+)M)?((?P<seconds>\d+)S)?',
+                duration_str
+            )
+             if not match: return 0
+             hours = int(match.group('hours') or 0)
+             minutes = int(match.group('minutes') or 0)
+             seconds = int(match.group('seconds') or 0)
+             return hours * 3600 + minutes * 60 + seconds
+
+        duration = parse_duration(content_details['duration'])
+        
+        return {
+            'title': snippet['title'],
+            'video_id': video_id,
+            'duration': duration,
+            'url': f"https://www.youtube.com/watch?v={video_id}"
+        }
+        
+    except Exception as e:
+        print(f"Error fetching video details: {e}")
+        return None

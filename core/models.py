@@ -35,6 +35,9 @@ class Video(models.Model):
     is_watched = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
     duration_seconds = models.PositiveIntegerField(default=0)
+    
+    # New Chunking Support
+    is_chunked = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['order']
@@ -49,6 +52,20 @@ class Video(models.Model):
 
     def __str__(self):
         return self.title
+
+class VideoChunk(models.Model):
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='chunks')
+    part_number = models.PositiveIntegerField()
+    title = models.CharField(max_length=100) # e.g. "Part 1 (00:00 - 20:00)"
+    start_seconds = models.PositiveIntegerField()
+    end_seconds = models.PositiveIntegerField()
+    is_watched = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['part_number']
+
+    def __str__(self):
+        return f"{self.video.title} - {self.title}"
 
 class Note(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='notes')

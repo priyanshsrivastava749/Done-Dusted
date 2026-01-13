@@ -6,8 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, FileResponse, HttpResponse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from .models import Exam, Subject, Video, Note, UserProfile, DailyStudyLog, CommonNote, StudySession, DailyGoal, Streak
-from .utils import fetch_playlist_items
+from .models import Exam, Subject, Video, Note, UserProfile, DailyStudyLog, CommonNote, StudySession, DailyGoal, Streak, VideoChunk
+from .utils import fetch_playlist_items, fetch_video_details
 import os
 
 def register(request):
@@ -191,14 +191,25 @@ def subject_detail(request, subject_id):
     subject = get_object_or_404(Subject, id=subject_id, exam__user=request.user)
     
     # Optimize: Fetch all videos once, calculate stats in python
-    videos = list(subject.videos.all()) 
-    total = len(videos)
-    completed = sum(1 for v in videos if v.is_watched)
+    videos = list(subject.videos.all().prefetch_related('chunks')) 
     
+    total_items = 0
+    completed_items = 0
+    
+    for v in videos:
+        if v.is_chunked:
+            chunks = v.chunks.all()
+            total_items += len(chunks)
+            completed_items += sum(1 for c in chunks if c.is_watched)
+        else:
+            total_items += 1
+            if v.is_watched:
+                completed_items += 1
+                
     note, created = Note.objects.get_or_create(subject=subject)
     # CONTENT LOAD REMOVED - Handled by lazy loading via get_note_content
     
-    progress = (completed / total * 360) if total > 0 else 0
+    progress = (completed_items / total_items * 360) if total_items > 0 else 0
     
     # Daily Progress
     today = timezone.now().date()
@@ -206,8 +217,25 @@ def subject_detail(request, subject_id):
     today_minutes = round(daily_log.seconds_watched / 60, 1)
     
     # Playlist Stats (Hours)
-    total_seconds_watched = sum(v.duration_seconds for v in videos if v.is_watched)
-    total_seconds_left = sum(v.duration_seconds for v in videos if not v.is_watched)
+    total_seconds_watched = 0
+    total_seconds_left = 0
+    
+    for v in videos:
+        if v.is_chunked:
+            # For chunked, we calculate based on watched chunks
+             # This is tricky without exact chunk duration if slightly uneven, but valid enough
+             for c in v.chunks.all():
+                 dur = c.end_seconds - c.start_seconds
+                 if c.is_watched:
+                     total_seconds_watched += dur
+                 else:
+                     total_seconds_left += dur
+        else:
+            if v.is_watched:
+                total_seconds_watched += v.duration_seconds
+            else:
+                total_seconds_left += v.duration_seconds
+
     
     watched_hours = "{:.2f}".format(total_seconds_watched / 3600)
     left_hours = "{:.2f}".format(total_seconds_left / 3600)
@@ -217,8 +245,8 @@ def subject_detail(request, subject_id):
         'videos': videos,
         'note': note,
         'progress': progress,
-        'total': total,
-        'completed': completed,
+        'total': total_items,
+        'completed': completed_items,
         'today_minutes': today_minutes,
         'daily_goal': subject.daily_goal_minutes,
         'remaining_goal': max(0, subject.daily_goal_minutes - today_minutes),
@@ -255,6 +283,74 @@ def add_playlist(request, subject_id):
                     order=idx,
                     duration_seconds=vid.get('duration', 0)
                 )
+    return redirect('subject_detail', subject_id=subject.id)
+
+@login_required
+def add_video(request, subject_id):
+    subject = get_object_or_404(Subject, id=subject_id, exam__user=request.user)
+    if request.method == 'POST':
+        url = request.POST.get('video_url')
+        mode = request.POST.get('mode', 'whole') # 'whole' or 'chunk'
+        
+        # Get Api Key
+        from django.conf import settings
+        img_key = getattr(settings, 'GOOGLE_API_KEY', None)
+        if img_key == 'YOUR_API_KEY_HERE': img_key = None
+        profile_key = request.user.profile.google_api_key
+        api_key = img_key if img_key else profile_key
+        
+        if not api_key: return redirect('dashboard')
+        
+        details = fetch_video_details(url, api_key)
+        if not details:
+             # Handle error
+             return redirect('subject_detail', subject_id=subject.id)
+             
+        # Determine Order
+        existing_count = Video.objects.filter(subject=subject).count()
+        
+        video = Video.objects.create(
+            subject=subject,
+            title=details['title'],
+            video_id=details['video_id'],
+            url=details['url'],
+            order=existing_count,
+            duration_seconds=details['duration'],
+            is_chunked=(mode == 'chunk')
+        )
+        
+        if mode == 'chunk':
+            try:
+                interval_mins = int(request.POST.get('interval', 20))
+            except: interval_mins = 20
+            
+            interval_seconds = interval_mins * 60
+            duration = details['duration']
+            
+            chunks = []
+            start = 0
+            part = 1
+            while start < duration:
+                end = min(start + interval_seconds, duration)
+                
+                # Title
+                # Convert seconds to MM:SS
+                def fmt(s): return f"{s//60:02d}:{s%60:02d}"
+                chunk_title = f"Part {part} ({fmt(start)} - {fmt(end)})"
+                
+                chunks.append(VideoChunk(
+                    video=video,
+                    part_number=part,
+                    title=chunk_title,
+                    start_seconds=start,
+                    end_seconds=end
+                ))
+                
+                start = end
+                part += 1
+            
+            VideoChunk.objects.bulk_create(chunks)
+            
     return redirect('subject_detail', subject_id=subject.id)
 
 @require_POST
@@ -301,6 +397,37 @@ def update_video_status(request, video_id):
         'today_minutes': today_minutes,
         'remaining_goal': max(0, video.subject.daily_goal_minutes - today_minutes),
         'analytics': analytics_response
+    })
+
+@require_POST
+@login_required
+def update_chunk_status(request, chunk_id):
+    chunk = get_object_or_404(VideoChunk, id=chunk_id, video__subject__exam__user=request.user)
+    import json
+    data = json.loads(request.body)
+    chunk.is_watched = data.get('is_watched', False)
+    chunk.save()
+    
+    # Update Daily Log
+    today = timezone.now().date()
+    daily_log, _ = DailyStudyLog.objects.get_or_create(
+        user=request.user, 
+        subject=chunk.video.subject, 
+        date=today
+    )
+    
+    duration = chunk.end_seconds - chunk.start_seconds
+    if chunk.is_watched:
+        daily_log.seconds_watched += duration
+    else:
+        daily_log.seconds_watched = max(0, daily_log.seconds_watched - duration)
+        
+    daily_log.save()
+    today_minutes = round(daily_log.seconds_watched / 60, 1)
+    
+    return JsonResponse({
+        'status': 'ok',
+        'today_minutes': today_minutes
     })
 
 @require_POST
@@ -419,7 +546,13 @@ def delete_subject(request, subject_id):
 @require_POST
 @login_required
 def delete_playlist(request, subject_id):
-    subject.videos.all().delete()
+    subject = get_object_or_404(Subject, id=subject_id, exam__user=request.user)
+    try:
+        subject.videos.all().delete()
+    except Exception as e:
+        # In a real app we might log this or flash a message
+        print(f"Error deleting playlist: {e}")
+        pass
     return redirect('subject_detail', subject_id=subject.id)
 
 @require_POST

@@ -239,6 +239,60 @@
     </div>
 </div>
 
+<!-- Add Video Section -->
+<div style="margin-bottom: 20px; display: flex; gap: 10px;">
+    <button onclick="openVideoModal()" class="btn btn-primary" style="background: #2ecc71;">+ Add Video</button>
+</div>
+
+<!-- Add Video Modal -->
+<div id="videoModal" class="modal-overlay"
+    style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;">
+    <div class="modal-content"
+        style="background: var(--card-bg); padding: 30px; border-radius: 12px; width: 400px; border: 1px solid var(--border-color);">
+        <h2 style="margin-bottom: 20px;">Add New Video</h2>
+        <form action="{% url 'add_video' subject.id %}" method="post">
+            {% csrf_token %}
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">Video URL</label>
+                <input type="text" name="video_url" placeholder="YouTube URL" required
+                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">Mode</label>
+                <div style="display: flex; gap: 20px;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="radio" name="mode" value="whole" checked onchange="toggleMode(this.value)">
+                        Keep Whole
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="radio" name="mode" value="chunk" onchange="toggleMode(this.value)">
+                        Divide into Chunks
+                    </label>
+                </div>
+            </div>
+
+            <div id="chunkOptions" style="margin-bottom: 20px; display: none;">
+                <label style="display: block; margin-bottom: 5px;">Chunk Duration</label>
+                <select name="interval" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
+                    <option value="10">10 Minutes</option>
+                    <option value="15">15 Minutes</option>
+                    <option value="20" selected>20 Minutes</option>
+                </select>
+                <p style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;">
+                    We will auto-generate a playlist for you.
+                </p>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn" onclick="closeVideoModal()"
+                    style="background: transparent; border: 1px solid var(--border-color);">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Video</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% if videos|length == 0 %}
 <div class="card" style="margin-bottom: 20px; background: #fff8c4;">
     <h3>Import Playlist</h3>
@@ -262,13 +316,12 @@
 
 <!-- Video Checklist View -->
 <div id="view-checklist" class="full-width-section">
-    {% if videos|length > 0 %}
+    {% if videos %}
     <div style="text-align: right; margin-bottom: 10px;">
         <button onclick="confirmDelete('{% url 'delete_playlist' subject.id %}', 'Playlist')" class="btn"
             style="background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 5px 10px; font-size: 0.8em;"
             title="Delete All Videos">🗑️ Delete Playlist</button>
     </div>
-    {% endif %}
     <table>
         <thead>
             <tr>
@@ -281,6 +334,43 @@
         </thead>
         <tbody>
             {% for video in videos %}
+            {% if video.is_chunked %}
+            <!-- Chunked Video Row -->
+            <tr style="background: rgba(255, 255, 255, 0.03);">
+                <td colspan="5" style="padding: 0;">
+                    <div style="padding: 10px 15px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;"
+                        onclick="togglePlaylist('playlist-{{ video.id }}')">
+                        <strong>📺 {{ video.title }}</strong>
+                        <span style="font-size: 0.8em; color: var(--text-secondary);">Click to Expand ▼</span>
+                    </div>
+                    <div id="playlist-{{ video.id }}" style="display: none; border-top: 1px solid var(--border-color);">
+                        <table style="width: 100%; margin: 0;">
+                            {% for chunk in video.chunks.all %}
+                            <tr class="{% if chunk.is_watched %}watched{% endif %}"
+                                style="background: rgba(0,0,0,0.1);">
+                                <td style="width: 50px; padding-left: 30px;">
+                                    <span style="color: var(--text-secondary);">Part {{ chunk.part_number }}</span>
+                                </td>
+                                <td>{{ chunk.title }}</td>
+                                <td style="width: 100px;">
+                                    <!-- Duration could be calculated if needed, simpler to just show range in title -->
+                                </td>
+                                <td style="width: 150px;">
+                                    <a href="{{ video.url }}&t={{ chunk.start_seconds }}" target="_blank"
+                                        class="btn btn-sm btn-primary btn-youtube">Watch</a>
+                                </td>
+                                <td style="width: 50px;">
+                                    <input type="checkbox" onchange="toggleChunkWatched('{{ chunk.id }}', this)" {{
+                                        chunk.is_watched|yesno:"checked," }}>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <!-- Standard Video Row -->
             <tr class="{% if video.is_watched %}watched{% endif %}">
                 <td>{{ forloop.counter }}</td>
                 <td>{{ video.title }}</td>
@@ -290,12 +380,21 @@
                         class="btn btn-sm btn-primary btn-youtube">Watch</a>
                 </td>
                 <td>
-                    <input type="checkbox" onchange="toggleWatched('{{ video.id }}', this)" {% if video.is_watched %}checked{% endif %}>
+                    <input type="checkbox" onchange="toggleWatched('{{ video.id }}', this)" {{
+                        video.is_watched|yesno:"checked," }}>
                 </td>
             </tr>
+            {% endif %}
             {% endfor %}
         </tbody>
     </table>
+    {% else %}
+    <div
+        style="text-align: center; padding: 40px; color: var(--text-secondary); background: rgba(0,0,0,0.02); border-radius: 8px; margin-top: 20px;">
+        <h3>No videos yet</h3>
+        <p>Use the "Add Video" button or import a playlist to get started.</p>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Notes View -->
@@ -637,6 +736,48 @@
             checklist.style.display = 'none';
             notes.style.display = 'block';
         }
+    }
+</script>
+<script>
+    // --- Video Modal Logic ---
+    function openVideoModal() {
+        document.getElementById('videoModal').style.display = 'flex';
+    }
+
+    function closeVideoModal() {
+        document.getElementById('videoModal').style.display = 'none';
+    }
+
+    function toggleMode(mode) {
+        const chunkOpts = document.getElementById('chunkOptions');
+        chunkOpts.style.display = (mode === 'chunk') ? 'block' : 'none';
+    }
+
+    // Explicit close on backdrop click
+    document.getElementById('videoModal').addEventListener('click', function (e) {
+        if (e.target === this) closeVideoModal();
+    });
+
+    // --- Playlist Toggle ---
+    function togglePlaylist(id) {
+        const el = document.getElementById(id);
+        el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+    }
+
+    // --- Chunk Watch Toggle ---
+    function toggleChunkWatched(chunkId, checkbox) {
+        fetch(`/core/chunk/${chunkId}/status/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ is_watched: checkbox.checked })
+        }).then(r => r.json()).then(data => {
+            if (data.today_minutes !== undefined) {
+                // Update any minutes display if present (reusing existing logic)
+            }
+            // Forcing reload to update overall progress bar correctly 
+            // (Subject progress calculation is complex to replicate on frontend purely)
+            location.reload();
+        });
     }
 </script>
 {% endblock %}
