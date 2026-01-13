@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    .analytics-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .chart-container {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        padding: 30px;
+        border-radius: 16px;
+        margin-bottom: 40px;
+        height: 400px;
+    }
+
+    .table-container {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        padding: 30px;
+        border-radius: 16px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        text-align: left;
+        padding: 15px;
+        border-bottom: 2px solid var(--border-color);
+        color: var(--text-secondary);
+    }
+
+    td {
+        padding: 15px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+</style>
+
+<div class="analytics-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <a href="{% url 'dashboard' %}" class="btn">← Back to Dashboard</a>
+        <h1>Subject Analytics</h1>
+    </div>
+
+    <!-- Loops dynamically through user goals -->
+    {% for goal_data in analytics_data %}
+    <div class="chart-container" style="height: auto; margin-bottom: 30px;">
+        <div class="card-header"
+            style="border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: var(--accent);">{{ goal_data.goal_name|upper }} Analytics</h2>
+                <div class="stats-row">
+                    <span class="value" style="font-size: 1.2em; font-weight: bold;">{{ goal_data.total_hours }} hrs
+                        Total</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 30px;">
+            <!-- Chart Container -->
+            <div style="flex: 1; min-width: 300px; position: relative; height: 300px;">
+                <canvas id="chart-{{ forloop.counter }}"></canvas>
+            </div>
+
+            <!-- Details List -->
+            <div style="flex: 1; min-width: 300px;">
+                <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 10px; border-bottom: 2px solid var(--border-color); text-align: left;">
+                                Subject</th>
+                            <th style="padding: 10px; border-bottom: 2px solid var(--border-color); text-align: right;">
+                                Hours</th>
+                            <th style="padding: 10px; border-bottom: 2px solid var(--border-color); text-align: right;">
+                                %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in goal_data.subjects %}
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid var(--border-color);">{{ sub.name }}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid var(--border-color); text-align: right;">
+                                {{ sub.hours }}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid var(--border-color); text-align: right;">
+                                {{ sub.percentage }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state" style="text-align: center; padding: 50px; color: var(--text-secondary);">
+        <p>No analytics data available. Create a goal and start watching videos to see stats!</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Chart.js Integration -->
+<!-- Chart.js Integration -->
+{{ analytics_data|json_script:"analytics-json" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', fetchAndRenderCharts);
+
+    async function fetchAndRenderCharts() {
+        // Robustly load data from the script tag
+        const analyticsData = JSON.parse(document.getElementById('analytics-json').textContent);
+        renderCharts(analyticsData);
+    }
+
+    function renderCharts(data) {
+        data.forEach((goal, index) => {
+            const canvas = document.getElementById(`chart-${index + 1}`);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const labels = goal.subjects.map(s => s.name);
+            const values = goal.subjects.map(s => s.percentage);
+
+            // Generated Colors
+            const colors = [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+                '#C9CBCF', '#E7E9ED', '#71B37C', '#E6B33D'
+            ];
+
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#888', font: { size: 12 } }
+                        }
+                    }
+                }
+            });
+        });
+    }
+</script>
+{% endblock %}

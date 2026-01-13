@@ -131,3 +131,37 @@ class CommonNote(models.Model):
             with open(file_path, 'r', encoding='utf-8') as f:
                 return f.read()
         return self.content # Fallback to DB
+
+class StudySession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_sessions')
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+    total_seconds = models.PositiveIntegerField(default=0)
+    date = models.DateField(default=timezone.now)
+
+    def __str__(self):
+        return f"Pro Session - {self.user.username} - {self.date}"
+
+class DailyGoal(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='daily_goals')
+    date = models.DateField(default=timezone.now)
+    goal_hours = models.FloatField()
+    completed_seconds = models.PositiveIntegerField(default=0)
+    is_completed = models.BooleanField(default=False)
+    achieved = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ['user', 'date']
+
+    def __str__(self):
+        return f"Goal - {self.user.username} - {self.date}"
+
+class Streak(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='streak')
+    current_streak = models.PositiveIntegerField(default=0)
+    best_streak = models.PositiveIntegerField(default=0)
+    last_updated = models.DateField(auto_now=True)
+
+    def __str__(self):
+        return f"Streak - {self.user.username} - {self.current_streak}"
+

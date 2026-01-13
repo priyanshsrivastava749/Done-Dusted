@@ -223,17 +223,12 @@
     <div style="display: flex; align-items: center; gap: 20px;">
         <div
             style="background: var(--bg-secondary); padding: 8px 15px; border-radius: 8px; font-size: 0.9em; display: flex; gap: 15px; align-items: center; border: 1px solid var(--border-color);">
+            <!-- New Hours Metrics -->
             <div>
-                <strong>Today:</strong> <span id="today-minutes">{{ today_minutes }}</span> / <strong>Goal:</strong> {{
-                daily_goal }}m
+                <strong>{{ watched_hours }} hrs</strong> watched
+                <span style="color: var(--text-secondary); margin: 0 5px;">|</span>
+                <strong>{{ left_hours }} hrs</strong> left
             </div>
-            <form action="{% url 'set_daily_goal' subject.id %}" method="post"
-                style="display: flex; gap: 5px; align-items: center; margin: 0;">
-                {% csrf_token %}
-                <input type="number" name="minutes" value="{{ daily_goal }}" style="width: 60px; padding: 4px;" min="0">
-                <button type="submit" class="btn btn-primary btn-sm"
-                    style="padding: 4px 8px; font-size: 0.8em;">Set</button>
-            </form>
         </div>
 
         <div class="progress-circle" style="--progress: {{ progress }}deg; width: 60px; height: 60px;">
@@ -296,10 +291,6 @@
                 </td>
                 <td>
                     <input type="checkbox" onchange="toggleWatched('{{ video.id }}', this)" {% if video.is_watched %}checked{% endif %}>
-
-
-
-
                 </td>
             </tr>
             {% endfor %}
