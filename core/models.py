@@ -6,6 +6,8 @@ from django.conf import settings
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     google_api_key = models.CharField(max_length=255, blank=True, null=True, help_text="Your YouTube Data API Key")
+    current_streak = models.PositiveIntegerField(default=0)
+    last_goal_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
@@ -117,6 +119,8 @@ class DailyStudyLog(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='study_logs')
     date = models.DateField(default=timezone.now)
     seconds_watched = models.PositiveIntegerField(default=0)
+    daily_goal_minutes = models.PositiveIntegerField(default=0)
+    goal_achieved = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ['user', 'subject', 'date']

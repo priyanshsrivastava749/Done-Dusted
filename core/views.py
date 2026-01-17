@@ -48,6 +48,23 @@ def dashboard(request):
     show_modal = not todays_goal
     streak, _ = Streak.objects.get_or_create(user=request.user)
     
+    # Check for streak reset (if yesterday goal missed)
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    yesterday_goal = DailyGoal.objects.filter(user=request.user, date=today - timezone.timedelta(days=1)).first()
+    
+    # Logic: If yesterday had a goal, but it wasn't achieved, reset streak.
+    # We only reset if we haven't already acted on today (to prevent double reset)
+    # Actually, simpler: Current streak is valid if last goal achieved was yesterday OR today.
+    # If last_goal_date < yesterday, reset.
+    if profile.last_goal_date and profile.last_goal_date < (today - timezone.timedelta(days=1)):
+        # But wait, what if they didn't set a goal yesterday? Streak might preserve?
+        # User rule: "If Yesterday.goal_achieved was False AND Yesterday had a goal set, reset..."
+        if yesterday_goal and not yesterday_goal.achieved:
+             profile.current_streak = 0
+             profile.save()
+             streak.current_streak = 0
+             streak.save()
+    
     context = {
         'exams': exams,
         'skill_analytics': skill_analytics,
@@ -427,6 +444,32 @@ def update_video_status(request, video_id):
     daily_log.save()
     today_minutes = round(daily_log.seconds_watched / 60, 1)
 
+    # Update Global Daily Goal from Video Watch Time
+    # If video is watched, we add the duration to the *Global* Daily Goal progress
+    # NOTE: This assumes `DailyGoal` tracks TOTAL study time, including videos.
+    # If `DailyGoal` is only for "Focus Timer", then we shouldn't add this.
+    # BUT, usually users want *all* study time to count.
+    # Let's add video duration to DailyGoal if it exists.
+    daily_goal = DailyGoal.objects.filter(user=request.user, date=today).first()
+    if daily_goal and video.is_watched:
+         daily_goal.completed_seconds += video.duration_seconds
+         # Check Goal
+         goal_seconds = int(daily_goal.goal_hours * 3600)
+         if daily_goal.completed_seconds >= goal_seconds and not daily_goal.achieved:
+            daily_goal.achieved = True
+            profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            streak, _ = Streak.objects.get_or_create(user=request.user)
+            profile.current_streak += 1
+            profile.last_goal_date = today
+            profile.save()
+            streak.current_streak = profile.current_streak
+            streak.best_streak = max(streak.best_streak, streak.current_streak)
+            streak.save()
+         daily_goal.save()
+    elif daily_goal and not video.is_watched: # Unchecking
+         daily_goal.completed_seconds = max(0, daily_goal.completed_seconds - video.duration_seconds)
+         daily_goal.save()
+
     # --- Live Analytics Calculation ---
     # We want to return the updated total hours for ALL exams to update any listeners
     all_exams = Exam.objects.filter(user=request.user)
@@ -471,6 +514,26 @@ def update_chunk_status(request, chunk_id):
         
     daily_log.save()
     today_minutes = round(daily_log.seconds_watched / 60, 1)
+
+    # Update Global Goal for Chunk
+    daily_goal = DailyGoal.objects.filter(user=request.user, date=today).first()
+    if daily_goal:
+        if chunk.is_watched:
+             daily_goal.completed_seconds += duration
+             goal_seconds = int(daily_goal.goal_hours * 3600)
+             if daily_goal.completed_seconds >= goal_seconds and not daily_goal.achieved:
+                daily_goal.achieved = True
+                profile, _ = UserProfile.objects.get_or_create(user=request.user)
+                streak, _ = Streak.objects.get_or_create(user=request.user)
+                profile.current_streak += 1
+                profile.last_goal_date = today
+                profile.save()
+                streak.current_streak = profile.current_streak
+                streak.best_streak = max(streak.best_streak, streak.current_streak)
+                streak.save()
+        else:
+             daily_goal.completed_seconds = max(0, daily_goal.completed_seconds - duration)
+        daily_goal.save()
     
     return JsonResponse({
         'status': 'ok',
@@ -557,9 +620,23 @@ def save_focus_progress(request):
     
     # Check completion
     goal_seconds = int(daily_goal.goal_hours * 3600)
-    if daily_goal.completed_seconds >= goal_seconds and not daily_goal.is_completed:
+    if daily_goal.completed_seconds >= goal_seconds: # Check if met
+        if not daily_goal.achieved: # First time met today
+            daily_goal.achieved = True
+            
+            # Update Streak
+            profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            streak, _ = Streak.objects.get_or_create(user=request.user)
+            
+            profile.current_streak += 1
+            profile.last_goal_date = today
+            profile.save()
+            
+            streak.current_streak = profile.current_streak
+            streak.best_streak = max(streak.best_streak, streak.current_streak)
+            streak.save()
+            
         daily_goal.is_completed = True
-        daily_goal.achieved = True
         
         # Streak Update
         streak, _ = Streak.objects.get_or_create(user=request.user)

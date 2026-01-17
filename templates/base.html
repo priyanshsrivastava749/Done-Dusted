@@ -128,8 +128,8 @@
         /* --- Global Floating Timer CSS --- */
         .global-timer-widget {
             position: fixed;
-            bottom: 30px;
-            right: 30px;
+            bottom: 20px;
+            right: 20px;
             background: rgba(20, 20, 20, 0.95);
             backdrop-filter: blur(12px);
             border: 1px solid #444;
@@ -141,9 +141,9 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
             z-index: 9999;
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            transform: translateY(100px);
-            /* Hidden by default */
-            opacity: 0;
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
         }
 
         .global-timer-widget.visible {
@@ -269,14 +269,7 @@
         </main>
     </div>
 
-    <!-- Global Floating Timer HTML -->
-    <div id="globalTimerWidget" class="global-timer-widget">
-        <div style="display: flex; flex-direction: column; line-height: 1;">
-            <span class="timer-label">FOCUS</span>
-        </div>
-        <span id="gTimerDisplay" class="timer-time">--:--:--</span>
-        <button id="gTimerBtn" class="timer-c-btn timer-start" onclick="toggleGlobalTimer()">▶</button>
-    </div>
+
 
     <!-- Global Toast -->
     <div id="globalToast" class="toast-global"></div>
@@ -304,6 +297,15 @@
     <audio id="alarmSound"
         src="data:audio/mp3;base64,SUQzBAAAAAAAI1RTSVMAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
         preload="auto"></audio>
+
+    <!-- Global Floating Timer HTML -->
+    <div id="globalTimerWidget" class="global-timer-widget">
+        <div style="display: flex; flex-direction: column; line-height: 1;">
+            <span class="timer-label">FOCUS</span>
+        </div>
+        <span id="gTimerDisplay" class="timer-time">--:--:--</span>
+        <button id="gTimerBtn" class="timer-c-btn timer-start" onclick="toggleGlobalTimer()">▶</button>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -362,6 +364,7 @@
 
         // On Load
         document.addEventListener('DOMContentLoaded', async function () {
+            console.log("Timer Widget Loaded");
             // Check if we have a goal (to determine if we should show the widget)
             // But to save requests, we usually only show if user interacts or we know state.
             // For now, let's always 'try' to fetch state or check localStorage.
@@ -397,11 +400,22 @@
         }
 
         function updateGlobalDisplay(sec) {
-            if (sec < 0) sec = 0;
+            let isOvertime = false;
+            let prefix = "";
+
+            if (sec < 0) {
+                isOvertime = true;
+                sec = Math.abs(sec); // Convert to positive for calc
+                prefix = "+ ";
+                gTimerDisplay.style.color = '#2ecc71'; // Green for overtime
+            } else {
+                gTimerDisplay.style.color = '#ecf0f1'; // Default
+            }
+
             const h = Math.floor(sec / 3600).toString().padStart(2, '0');
             const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
             const s = (sec % 60).toString().padStart(2, '0');
-            gTimerDisplay.textContent = `${h}:${m}:${s}`;
+            gTimerDisplay.textContent = `${prefix}${h}:${m}:${s}`;
         }
 
         function showGlobalToast(msg) {
@@ -497,8 +511,31 @@
                 }
 
                 if (remaining <= 0) {
-                    // Done
-                    finishGlobalTimer();
+                    // Goal Achieved -> Overtime Mode
+                    // We don't stop, we just update display to show overtime
+                    updateGlobalDisplay(remaining);
+
+                    // Check if we just crossed the line
+                    if (remaining === 0 || remaining === -1) {
+                        showGlobalToast("Goal Achieved! 🎉 You're in Overtime!");
+                        // Optional: Play sound
+                        const audio = new Audio('https://actions.google.com/sounds/v1/cartoon/clank_car_crash.ogg'); // Placeholder or use existing alarm
+                        // alarm.play(); 
+                    }
+                } else {
+                    updateGlobalDisplay(remaining);
+                }
+
+                // Save logic
+                // We need to track how much we haven't saved.
+                // This is tricky with absolute timestamps.
+                // Simpler approach: We just assume we entered this loop 1 sec ago.
+                // We increment a local counter.
+                gUnsavedSeconds++;
+
+                if (gUnsavedSeconds >= 10) {
+                    saveGlobalProgress(gUnsavedSeconds);
+                    gUnsavedSeconds = 0;
                 }
 
             }, 1000);
@@ -513,13 +550,18 @@
         }
 
         async function finishGlobalTimer() {
+            // This is now only called manually or if we want to force stop
             stopGlobalTicker();
             if (gUnsavedSeconds > 0) await saveGlobalProgress(gUnsavedSeconds);
             localStorage.removeItem('timerStartTime');
             localStorage.removeItem('timerTotalDuration');
-            updateGlobalDisplay(0);
-            showGlobalToast("Goal Achieved! You're a legend! 🏆");
-            // Could play sound here
+
+            // Fetch actual status to be clean
+            const res = await fetch("{% url 'get_today_goal' %}");
+            const data = await res.json();
+            if (data.status === 'ok') updateGlobalDisplay(data.remaining_seconds);
+
+            showGlobalToast("Session Ended. Great work!");
         }
 
         async function saveGlobalProgress(secs) {
