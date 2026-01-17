@@ -156,23 +156,21 @@
 
 <!-- ALL Section (Analytics) -->
 <!-- ALL Section (Analytics) -->
-<h2 style="margin-bottom: 20px;">Overview</h2>
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <p style="color:var(--text-secondary)">Quick stats for today</p>
-    <a href="{% url 'analytics_subject' %}" class="btn">📊 View Detailed Analytics</a>
-</div>
-<div class="analytics-grid">
-    {% for goal in user_goals %}
-    <div class="stat-card">
-        <div class="stat-title">{{ goal.name|upper }}</div>
-        <div class="stat-value">{{ goal.total_hours }} <span style="font-size:0.5em">hr</span></div>
+<!-- SKILLS Analytics Section -->
+<!-- Analytics Summary Card -->
+<div style="margin-bottom: 40px;">
+    <div
+        style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <div>
+            <h2 style="margin: 0; font-size: 1.5em;">Study Analytics</h2>
+            <p style="color: var(--text-secondary); margin-top: 5px; margin-bottom: 0;">View detailed breakdown of your
+                progress by Goal & Subject.</p>
+        </div>
+        <a href="{% url 'analytics_dashboard' %}" class="btn btn-primary"
+            style="padding: 12px 25px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+            <span>📊</span> View Detailed Analytics
+        </a>
     </div>
-    {% empty %}
-    <div class="stat-card" style="grid-column: 1 / -1; padding: 20px;">
-        <p style="color: var(--text-secondary); margin: 0;">No analytics data. Create a goal and start watching videos!
-        </p>
-    </div>
-    {% endfor %}
 </div>
 
 <!-- GATE Progress Section Removed (Moved to Analytics Page) -->
@@ -199,12 +197,7 @@
     {% endfor %}
 </div>
 
-<!-- Global Timer Widget -->
-<div id="globalTimer" class="global-timer">
-    <span style="color: #bbb; font-size: 0.8em;">FOCUS</span>
-    <span id="timerDisplay" class="timer-display">00:00:00</span>
-    <button id="timerBtn" class="timer-btn start" onclick="toggleTimer()">▶</button>
-</div>
+<!-- Global Timer Widget Moved to Base.html -->
 
 <!-- Toast Notification Container -->
 <div id="toast" class="toast"></div>
@@ -272,230 +265,13 @@
     // --- Toast Logic ---
     function showToast(message, type = 'info') {
         const x = document.getElementById("toast");
+        if (!x) return;
         x.textContent = message;
         x.className = "toast show " + type;
         setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
     }
 
-    // --- Chart JS Removed (Moved to Analytics Page) ---
-
-
-    // --- Goal-Based Focus Timer Logic (NEW) ---
-    let timerInterval;
-    let remainingSeconds = 0;
-    let isRunning = false;
-    let completedSeconds = 0;
-    let goalSeconds = 0;
-
-    const timerDisplay = document.getElementById('timerDisplay');
-    const timerBtn = document.getElementById('timerBtn');
-    const timerWidget = document.getElementById('globalTimer');
-    const timerLabel = timerWidget.querySelector('span'); // "FOCUS" text
-
-    // Initial Load
-    document.addEventListener('DOMContentLoaded', fetchGoalStatus);
-
-    async function fetchGoalStatus() {
-        try {
-            const res = await fetch("{% url 'get_today_goal' %}");
-            const data = await res.json();
-
-            if (data.status === 'ok') {
-                goalSeconds = data.goal_seconds;
-                completedSeconds = data.completed_seconds;
-
-                if (data.is_completed) {
-                    // Start completed state
-                    displayCompleted();
-                } else {
-                    // Ready state
-                    remainingSeconds = data.remaining_seconds;
-                    updateDisplay(remainingSeconds);
-
-                    // Check if we should auto-resume (via localStorage flag)
-                    const wasRunning = localStorage.getItem('focusTimerRunning');
-                    if (wasRunning === 'true') {
-                        startCountdown();
-                    }
-                }
-            } else if (data.status === 'no_goal') {
-                timerLabel.textContent = "NO GOAL";
-                timerDisplay.textContent = "--:--:--";
-                timerBtn.disabled = true;
-                timerBtn.style.opacity = "0.5";
-            }
-        } catch (e) { console.error("Error fetching goal:", e); }
-    }
-
-    function updateDisplay(sec) {
-        if (sec < 0) sec = 0;
-        const h = Math.floor(sec / 3600).toString().padStart(2, '0');
-        const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
-        const s = (sec % 60).toString().padStart(2, '0');
-        timerDisplay.textContent = `${h}:${m}:${s}`;
-    }
-
-    function displayCompleted() {
-        timerDisplay.textContent = "00:00:00";
-        timerLabel.textContent = "WON 🎯";
-        timerLabel.style.color = "#2ecc71";
-        timerWidget.style.borderColor = "#2ecc71";
-        timerBtn.textContent = '✅';
-        timerBtn.disabled = true;
-
-        // Remove running state
-        localStorage.removeItem('focusTimerRunning');
-        if (timerInterval) clearInterval(timerInterval);
-        timerWidget.classList.remove('running');
-    }
-
-    async function toggleTimer() {
-        if (!isRunning) {
-            // Start
-            startCountdown();
-            localStorage.setItem('focusTimerRunning', 'true');
-            timerWidget.classList.add('running');
-            showToast("Focus Mode ON! 🚀", "success");
-        } else {
-            // Stop (Pause) - Save progress
-            stopCountdown();
-            localStorage.removeItem('focusTimerRunning');
-            timerWidget.classList.remove('running');
-
-            // Sync with backend one last time
-            await saveProgress(0); // 0 just to trigger save check
-            showToast("Focus Paused. Progress Saved.", "info");
-        }
-    }
-
-    function startCountdown() {
-        isRunning = true;
-        timerBtn.textContent = '⏹';
-        timerBtn.classList.replace('start', 'stop');
-
-        // Start Interval
-        timerInterval = setInterval(() => {
-            if (remainingSeconds > 0) {
-                remainingSeconds--;
-                updateDisplay(remainingSeconds);
-
-                // Every 30 seconds, save progress (incremental 30s? No, too complex to sync)
-                // Better strategy: We decr remaining locally.
-                // We send a "heartbeat" or simply rely on "Stop" to save huge chunks?
-                // Risk: User closes tab without stop.
-                // Solution: Send heartbeat every 60s.
-                if (remainingSeconds % 60 === 0) {
-                    saveProgress(60);
-                }
-            } else {
-                // Goal Reached!
-                stopCountdown();
-                saveProgress(60); // Save the last chunk (approx) or sync exact diff?
-                displayCompleted();
-                showToast(`Daily Goal Achieved! 🎯`, "success");
-            }
-        }, 1000);
-    }
-
-    function stopCountdown() {
-        isRunning = false;
-        clearInterval(timerInterval);
-        timerBtn.textContent = '▶';
-        timerBtn.classList.replace('stop', 'start');
-    }
-
-    async function saveProgress(secondsToAdd) {
-        // We actually want to be precise. 
-        // But for this simple implementation, let's just push small chunks.
-        // OR better: Just tell server "I completed 1 more second"? No, too much traffic.
-        // Let's stick to the heartbeat of 60s + residual on stop.
-        // Actually, on "Stop" we don't know exactly how many seconds elapsed since last heartbeat unless we track `lastSavedTime`.
-
-        // Let's simplified: 
-        // We only call saveProgress(60) inside interval.
-        // On Stop, we might lose <60s transparency.
-        // Let's improve:
-        // We just send "save_focus_progress" with `seconds` = 1 every 1 sec? NO.
-        // We send `seconds` = 10 every 10s.
-
-        // Refined Logic for this insert:
-        // We receive `secondsToAdd` argument.
-        if (secondsToAdd <= 0) return;
-
-        try {
-            const res = await fetch("{% url 'save_focus_progress' %}", {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ seconds: secondsToAdd })
-            });
-            const data = await res.json();
-            if (data.is_completed) {
-                displayCompleted();
-            }
-        } catch (e) {
-            console.error("Save failed", e);
-        }
-    }
-
-    // Modify interval to track un-saved delta logic if we want strictness.
-    // Re-writing startCountdown to be robust:
-
-    let unsavedSeconds = 0;
-
-    function startCountdown_Robust() {
-        isRunning = true;
-        timerBtn.textContent = '⏹';
-        timerBtn.classList.replace('start', 'stop');
-
-        timerInterval = setInterval(() => {
-            if (remainingSeconds > 0) {
-                remainingSeconds--;
-                unsavedSeconds++;
-                updateDisplay(remainingSeconds);
-
-                if (unsavedSeconds >= 10) { // Save every 10s
-                    saveProgress(unsavedSeconds);
-                    unsavedSeconds = 0;
-                }
-            } else {
-                // Finish
-                if (unsavedSeconds > 0) saveProgress(unsavedSeconds);
-                stopCountdown();
-                displayCompleted();
-                showToast("Goal Achieved! You are amazing! 🌟", "success");
-            }
-        }, 1000);
-    }
-
-    // Override standard start
-    startCountdown = startCountdown_Robust; // mapping
-
-    // Override toggleTimer stop logic
-    const originalToggle = toggleTimer;
-    toggleTimer = async function () {
-        if (!isRunning) {
-            startCountdown();
-            localStorage.setItem('focusTimerRunning', 'true');
-            timerWidget.classList.add('running');
-            showToast("Focus Mode ON! 🚀", "success");
-        } else {
-            stopCountdown();
-            localStorage.removeItem('focusTimerRunning');
-            timerWidget.classList.remove('running');
-
-            if (unsavedSeconds > 0) {
-                await saveProgress(unsavedSeconds);
-                unsavedSeconds = 0;
-            }
-            showToast("Paused. Progress saved.", "info");
-        }
-    };
-
-
-    // --- Goal Logic (FIXED) ---
+    // --- Goal Logic ---
     async function setGoal(e) {
         e.preventDefault();
         const hours = e.target.hours.value;
@@ -514,18 +290,14 @@
             const data = await res.json();
 
             if (data.status === 'ok') {
-                // Success Case
                 modal.style.display = 'none';
                 showToast("Goal set! Go crush it! 🚀", "success");
-                setTimeout(() => location.reload(), 1000); // Reload to reflect status
+                setTimeout(() => location.reload(), 1000);
             } else if (data.status === 'exists') {
-                // Duplicate Goal Case (Handle backend flag)
                 modal.style.display = 'none';
                 showToast(data.message, "info");
-                // Optional: keep button disabled or reload
                 setTimeout(() => location.reload(), 1000);
             } else {
-                // Other Errors
                 showToast(data.message, "error");
             }
         } catch (error) {

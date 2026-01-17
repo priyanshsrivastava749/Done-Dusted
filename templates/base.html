@@ -124,6 +124,108 @@
                 opacity: 1;
             }
         }
+
+        /* --- Global Floating Timer CSS --- */
+        .global-timer-widget {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid #444;
+            padding: 12px 20px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            z-index: 9999;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform: translateY(100px);
+            /* Hidden by default */
+            opacity: 0;
+        }
+
+        .global-timer-widget.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .global-timer-widget.active {
+            border-color: #e74c3c;
+            box-shadow: 0 0 25px rgba(231, 76, 60, 0.3);
+        }
+
+        .timer-time {
+            font-family: 'Courier New', monospace;
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #ecf0f1;
+            letter-spacing: 1px;
+        }
+
+        .timer-label {
+            font-size: 0.75em;
+            color: #95a5a6;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .timer-c-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+            transition: transform 0.2s, background 0.2s;
+            color: white;
+        }
+
+        .timer-c-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .timer-c-btn:active {
+            transform: scale(0.95);
+        }
+
+        .timer-start {
+            background: #2ecc71;
+        }
+
+        .timer-stop {
+            background: #e74c3c;
+        }
+
+        /* Toast CSS if not present */
+        .toast-global {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 10000;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 17px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+
+        .toast-global.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
     </style>
 </head>
 
@@ -164,7 +266,20 @@
             {% block content %}
             {% endblock %}
         </main>
+        </main>
     </div>
+
+    <!-- Global Floating Timer HTML -->
+    <div id="globalTimerWidget" class="global-timer-widget">
+        <div style="display: flex; flex-direction: column; line-height: 1;">
+            <span class="timer-label">FOCUS</span>
+        </div>
+        <span id="gTimerDisplay" class="timer-time">--:--:--</span>
+        <button id="gTimerBtn" class="timer-c-btn timer-start" onclick="toggleGlobalTimer()">▶</button>
+    </div>
+
+    <!-- Global Toast -->
+    <div id="globalToast" class="toast-global"></div>
 
     <!-- Delete Confirmation Modal -->
     <div id="deleteModal" class="modal-overlay">
@@ -231,6 +346,194 @@
                 closeDeleteModal();
             }
         });
+        // Close on outside click
+        deleteModal.addEventListener('click', function (e) {
+            if (e.target === deleteModal) {
+                closeDeleteModal();
+            }
+        });
+
+        // --- GLOBAL TIMER LOGIC (Persistent) ---
+        const gTimerWidget = document.getElementById('globalTimerWidget');
+        const gTimerDisplay = document.getElementById('gTimerDisplay');
+        const gTimerBtn = document.getElementById('gTimerBtn');
+        let gTimerInterval;
+        let gUnsavedSeconds = 0;
+
+        // On Load
+        document.addEventListener('DOMContentLoaded', async function () {
+            // Check if we have a goal (to determine if we should show the widget)
+            // But to save requests, we usually only show if user interacts or we know state.
+            // For now, let's always 'try' to fetch state or check localStorage.
+
+            // 1. Check LocalStorage for Active Run
+            const storedStart = localStorage.getItem('timerStartTime'); // timestamp
+            const storedDuration = localStorage.getItem('timerTotalDuration'); // seconds
+
+            if (storedStart && storedDuration) {
+                // Timer is RUNNING
+                showTimerWidget();
+                startGlobalTicker(parseInt(storedStart), parseInt(storedDuration));
+            } else {
+                // Timer NOT running. Check if we have a valid goal to show widget?
+                // Or just query backend status once.
+                try {
+                    const res = await fetch("{% url 'get_today_goal' %}");
+                    const data = await res.json();
+                    if (data.status === 'ok') {
+                        if (!data.is_completed) {
+                            showTimerWidget();
+                            updateGlobalDisplay(data.remaining_seconds);
+                            // Store potentially needed data
+                            localStorage.setItem('timerRemainingStatic', data.remaining_seconds);
+                        }
+                    }
+                } catch (e) { console.log('Timer init failed', e); }
+            }
+        });
+
+        function showTimerWidget() {
+            gTimerWidget.classList.add('visible');
+        }
+
+        function updateGlobalDisplay(sec) {
+            if (sec < 0) sec = 0;
+            const h = Math.floor(sec / 3600).toString().padStart(2, '0');
+            const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
+            const s = (sec % 60).toString().padStart(2, '0');
+            gTimerDisplay.textContent = `${h}:${m}:${s}`;
+        }
+
+        function showGlobalToast(msg) {
+            const x = document.getElementById("globalToast");
+            x.textContent = msg;
+            x.className = "toast-global show";
+            setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
+        }
+
+        async function toggleGlobalTimer() {
+            const isRunning = localStorage.getItem('timerStartTime') !== null;
+
+            if (!isRunning) {
+                // START
+                // We need to know 'remaining seconds' which we either have cached or need to fetch
+                let duration = localStorage.getItem('timerRemainingStatic');
+
+                if (!duration) {
+                    // Fetch mostly for safety
+                    const res = await fetch("{% url 'get_today_goal' %}");
+                    const data = await res.json();
+                    if (data.status !== 'ok') {
+                        showGlobalToast("Please set a Daily Goal first!");
+                        return;
+                    }
+                    duration = data.remaining_seconds;
+                }
+
+                duration = parseInt(duration);
+                if (duration <= 0) {
+                    showGlobalToast("Goal already completed!");
+                    return;
+                }
+
+                const now = Date.now(); // ms
+                localStorage.setItem('timerStartTime', now);
+                localStorage.setItem('timerTotalDuration', duration);
+
+                startGlobalTicker(now, duration);
+                showGlobalToast("Focus Mode ON! 🚀");
+
+            } else {
+                // STOP
+                stopGlobalTicker();
+                // We need to calculate how much we actually did.
+                // In a perfect world, we sync exact diff. 
+                // Because `startGlobalTicker` saves incrementally, we just need to ensure the final residual is saved.
+                if (gUnsavedSeconds > 0) {
+                    await saveGlobalProgress(gUnsavedSeconds);
+                    gUnsavedSeconds = 0;
+                }
+
+                // Clear state
+                localStorage.removeItem('timerStartTime');
+                localStorage.removeItem('timerTotalDuration');
+
+                // Refresh remaining static for display
+                const res = await fetch("{% url 'get_today_goal' %}");
+                const data = await res.json();
+                if (data.status === 'ok') updateGlobalDisplay(data.remaining_seconds);
+
+                showGlobalToast("Focus Paused.");
+            }
+        }
+
+        function startGlobalTicker(startTimestamp, totalDurationSeconds) {
+            gTimerWidget.classList.add('active');
+            gTimerBtn.textContent = '⏹';
+            gTimerBtn.classList.remove('timer-start');
+            gTimerBtn.classList.add('timer-stop');
+
+            if (gTimerInterval) clearInterval(gTimerInterval);
+
+            gTimerInterval = setInterval(() => {
+                const now = Date.now();
+                const elapsedMS = now - startTimestamp;
+                const elapsedSec = Math.floor(elapsedMS / 1000);
+
+                const remaining = totalDurationSeconds - elapsedSec;
+
+                updateGlobalDisplay(remaining);
+
+                // Save logic
+                // We need to track how much we haven't saved.
+                // This is tricky with absolute timestamps.
+                // Simpler approach: We just assume we entered this loop 1 sec ago.
+                // We increment a local counter.
+                gUnsavedSeconds++;
+
+                if (gUnsavedSeconds >= 10) {
+                    saveGlobalProgress(gUnsavedSeconds);
+                    gUnsavedSeconds = 0;
+                }
+
+                if (remaining <= 0) {
+                    // Done
+                    finishGlobalTimer();
+                }
+
+            }, 1000);
+        }
+
+        function stopGlobalTicker() {
+            gTimerWidget.classList.remove('active');
+            gTimerBtn.textContent = '▶';
+            gTimerBtn.classList.remove('timer-stop');
+            gTimerBtn.classList.add('timer-start');
+            if (gTimerInterval) clearInterval(gTimerInterval);
+        }
+
+        async function finishGlobalTimer() {
+            stopGlobalTicker();
+            if (gUnsavedSeconds > 0) await saveGlobalProgress(gUnsavedSeconds);
+            localStorage.removeItem('timerStartTime');
+            localStorage.removeItem('timerTotalDuration');
+            updateGlobalDisplay(0);
+            showGlobalToast("Goal Achieved! You're a legend! 🏆");
+            // Could play sound here
+        }
+
+        async function saveGlobalProgress(secs) {
+            try {
+                const res = await fetch("{% url 'save_focus_progress' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ seconds: secs })
+                });
+            } catch (e) { console.error(e); }
+        }
     </script>
 </body>
 

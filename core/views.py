@@ -40,17 +40,8 @@ def dashboard(request):
     has_api_key = bool(env_key or profile_key)
         
 
-    user_goals = []
-    for exam in exams:
-        watched_seconds = Video.objects.filter(
-            subject__exam=exam, 
-            is_watched=True
-        ).aggregate(models.Sum('duration_seconds'))['duration_seconds__sum'] or 0
-        
-        user_goals.append({
-            'name': exam.name,
-            'total_hours': round(watched_seconds / 3600, 1)
-        })
+    # --- SKILLS ANALYTICS REMOVED (Moved to dedicated page) ---
+    skill_analytics = [] 
 
     today = timezone.now().date()
     todays_goal = DailyGoal.objects.filter(user=request.user, date=today).first()
@@ -59,13 +50,69 @@ def dashboard(request):
     
     context = {
         'exams': exams,
-        'user_goals': user_goals,
+        'skill_analytics': skill_analytics,
         'has_api_key': has_api_key,
         'todays_goal': todays_goal,
         'show_modal': show_modal,
         'streak': streak,
     }
     return render(request, 'dashboard.html', context)
+
+
+@login_required
+def analytics_dashboard(request):
+    analytics_data = []
+    
+    # 1. Fetch Goals (Exams)
+    goals = Exam.objects.filter(user=request.user).prefetch_related('subjects')
+    
+    for goal in goals:
+        goal_total_seconds = 0
+        subjects_data = []
+        
+        # 2. Iterate Subjects
+        for subject in goal.subjects.all():
+            # Calculate Chunk Hours
+            chunk_seconds = VideoChunk.objects.filter(
+                video__subject=subject,
+                is_watched=True
+            ).aggregate(
+                total=models.Sum(models.F('end_seconds') - models.F('start_seconds'))
+            )['total'] or 0
+            
+            # Calculate Whole Video Hours (exclude chunked videos)
+            video_seconds = Video.objects.filter(
+                subject=subject,
+                is_watched=True,
+                is_chunked=False
+            ).aggregate(
+                total=models.Sum('duration_seconds')
+            )['total'] or 0
+            
+            subject_total_seconds = chunk_seconds + video_seconds
+            goal_total_seconds += subject_total_seconds
+            
+            if subject_total_seconds > 0:
+                subjects_data.append({
+                    'name': subject.name,
+                    'seconds': subject_total_seconds,
+                    'hours': round(subject_total_seconds / 3600, 1)
+                })
+        
+        # 3. Calculate Percentages
+        for sub in subjects_data:
+            sub['percent'] = round((sub['seconds'] / goal_total_seconds) * 100, 1) if goal_total_seconds > 0 else 0
+            
+        # Sort subjects by contribution (optional but nice)
+        subjects_data.sort(key=lambda x: x['seconds'], reverse=True)
+        
+        analytics_data.append({
+            'goal_name': goal.name,
+            'total_hours': round(goal_total_seconds / 3600, 1),
+            'subjects': subjects_data
+        })
+        
+    return render(request, 'analytics_dashboard.html', {'analytics_data': analytics_data})
 
 
 @login_required

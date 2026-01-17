@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path('register/', views.register, name='register'),
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('analytics/', views.analytics_dashboard, name='analytics_dashboard'),
     path('analytics/gate/', views.analytics_details, name='analytics_subject'),
     path('analytics/data/', views.get_analytics_data, name='get_analytics_data'),
     path('api_guide/', TemplateView.as_view(template_name='api_guide.html'), name='api_guide'),

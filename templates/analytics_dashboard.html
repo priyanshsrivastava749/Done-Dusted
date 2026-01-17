@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .analytics-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .goal-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 25px;
+        margin-bottom: 40px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .goal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 15px;
+    }
+
+    .goal-title {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: var(--text-primary);
+    }
+
+    .goal-stats {
+        font-size: 1.1em;
+        color: var(--text-secondary);
+        background: var(--bg-secondary);
+        padding: 5px 15px;
+        border-radius: 20px;
+    }
+
+    .subject-table-container {
+        overflow-x: auto;
+    }
+
+    .subject-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .subject-table th {
+        text-align: left;
+        padding: 12px;
+        color: var(--text-secondary);
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .subject-table td {
+        padding: 15px 12px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .subject-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .progress-bar-container {
+        width: 100%;
+        height: 8px;
+        background: var(--bg-secondary);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-right: 15px;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #3498db, #2ecc71);
+        border-radius: 4px;
+        transition: width 0.5s ease-in-out;
+    }
+
+    .percentage-cell {
+        display: flex;
+        align-items: center;
+        min-width: 200px;
+    }
+
+    .back-btn {
+        text-decoration: none;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 600;
+    }
+
+    .back-btn:hover {
+        color: var(--text-primary);
+    }
+</style>
+
+<div class="analytics-header">
+    <div>
+        <a href="{% url 'dashboard' %}" class="back-btn">← Back to Dashboard</a>
+        <h1 style="margin-top: 10px;">Detailed Analytics</h1>
+        <p style="color: var(--text-secondary);">Breakdown of your study time by Goal & Subject</p>
+    </div>
+</div>
+
+{% for goal in analytics_data %}
+<div class="goal-section">
+    <div class="goal-header">
+        <div class="goal-title">{{ goal.goal_name }}</div>
+        <div class="goal-stats">⏱ {{ goal.total_hours }} Hrs Total</div>
+    </div>
+
+    {% if goal.subjects %}
+    <div class="subject-table-container">
+        <table class="subject-table">
+            <thead>
+                <tr>
+                    <th width="40%">Subject</th>
+                    <th width="20%">Time Invested</th>
+                    <th width="40%">Contribution</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in goal.subjects %}
+                <tr>
+                    <td style="font-weight: 500;">{{ sub.name }}</td>
+                    <td>{{ sub.hours }} hrs</td>
+                    <td>
+                        <div class="percentage-cell">
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" style="width: {{ sub.percent }}%"></div>
+                            </div>
+                            <span style="font-size: 0.9em; min-width: 45px;">{{ sub.percent }}%</span>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 30px; color: var(--text-secondary);">
+        <p>No study data recorded for this goal yet.</p>
+        <p style="font-size: 0.9em;">Start watching videos or chunks to see your progress!</p>
+    </div>
+    {% endif %}
+</div>
+{% empty %}
+<div style="text-align: center; padding: 50px;">
+    <h2>No Analytics Available</h2>
+    <p style="color: var(--text-secondary);">You haven't set up any Goals (Exams) yet.</p>
+    <a href="{% url 'create_exam' %}" class="btn btn-primary" style="margin-top: 20px; display: inline-block;">Create a
+        Goal</a>
+</div>
+{% endfor %}
+
+{% endblock %}
