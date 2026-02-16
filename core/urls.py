@@ -10,6 +10,7 @@ urlpatterns = [
     path('analytics/data/', views.get_analytics_data, name='get_analytics_data'),
     path('api_guide/', TemplateView.as_view(template_name='api_guide.html'), name='api_guide'),
     path('save_api/', views.save_api_key, name='save_api_key'),
+    path('setup-api-key/', views.setup_api_key, name='setup_api_key'),
     path('create_exam/', views.create_exam, name='create_exam'),
     path('exam/<int:exam_id>/', views.exam_detail, name='exam_detail'),
     path('subject/<int:subject_id>/', views.subject_detail, name='subject_detail'),

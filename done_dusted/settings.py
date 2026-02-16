@@ -25,7 +25,7 @@ if env_file.exists():
                 key, value = line.strip().split('=', 1)
                 os.environ[key] = value
 
-GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
+# GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
 
 
 # Quick-start development settings - unsuitable for production
@@ -60,6 +60,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.EnsureAPIKeyMiddleware',
 ]
 
 ROOT_URLCONF = 'done_dusted.urls'

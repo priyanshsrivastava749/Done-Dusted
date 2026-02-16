@@ -1,16 +1,26 @@
 import requests
-from django.conf import settings
+# REMOVED: from django.conf import settings
 
 def fetch_playlist_items(playlist_url, api_key):
     """
     Fetches videos from a YouTube playlist URL.
-    Returns a list of dicts: [{'title':, 'video_id':, 'url':}]
+    Returns:
+       - Success: List of dicts [{'title':..., 'video_id':..., 'url':...}]
+       - Failure: Returns None (logs error) or empty list
     """
+    if not api_key:
+        print("Error: No API Key provided to fetch_playlist_items")
+        return None
+
     # Extract playlist ID from URL
     if "list=" not in playlist_url:
+        print("Error: Invalid Playlist URL")
         return None
     
-    playlist_id = playlist_url.split("list=")[1].split("&")[0]
+    try:
+        playlist_id = playlist_url.split("list=")[1].split("&")[0]
+    except IndexError:
+         return None
     
     api_url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
@@ -60,8 +70,12 @@ def fetch_playlist_items(playlist_url, api_key):
             
             for item in items:
                 snippet = item['snippet']
-                video_id = snippet['resourceId']['videoId']
-                title = snippet['title']
+                resource = snippet.get('resourceId', {})
+                video_id = resource.get('videoId')
+                
+                if not video_id: continue
+                
+                title = snippet.get('title', 'Unknown')
                 
                 # Filter out deleted/private videos
                 if title == "Private video" or title == "Deleted video":
@@ -90,7 +104,7 @@ def fetch_playlist_items(playlist_url, api_key):
                 # Assemble final list
                 for vid_id in video_ids:
                     videos.append({
-                        'title': snippet_map[vid_id],
+                        'title': snippet_map.get(vid_id, 'Unknown'),
                         'video_id': vid_id,
                         'url': f"https://www.youtube.com/watch?v={vid_id}",
                         'duration': duration_map.get(vid_id, 0)
@@ -109,17 +123,27 @@ def fetch_playlist_items(playlist_url, api_key):
 def fetch_video_details(video_url, api_key):
     """
     Fetches details for a single video.
-    Returns dict: {'title':, 'video_id':, 'duration':}
+    Returns:
+        - Success: dict {'title':, 'video_id':, 'duration':, 'url':}
+        - Failure: None
     """
+    if not api_key:
+        print("Error: No API Key provided to fetch_video_details")
+        return None
+
     import re
     # Extract Video ID
     # Supports: youtube.com/watch?v=ID, youtu.be/ID
     video_id = None
     if "youtube.com" in video_url:
         if "v=" in video_url:
-            video_id = video_url.split("v=")[1].split("&")[0]
+            try:
+                video_id = video_url.split("v=")[1].split("&")[0]
+            except IndexError: pass
     elif "youtu.be" in video_url:
-        video_id = video_url.split("/")[-1].split("?")[0]
+        try:
+            video_id = video_url.split("/")[-1].split("?")[0]
+        except IndexError: pass
         
     if not video_id:
         return None
@@ -134,6 +158,10 @@ def fetch_video_details(video_url, api_key):
     try:
         response = requests.get(api_url, params=params)
         data = response.json()
+        
+        if 'error' in data:
+            print(f"YouTube API Error: {data['error']}")
+            return None
         
         if 'items' not in data or not data['items']:
             return None

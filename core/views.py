@@ -9,38 +9,58 @@ from django.views.decorators.http import require_POST
 from .models import Exam, Subject, Video, Note, UserProfile, DailyStudyLog, CommonNote, StudySession, DailyGoal, Streak, VideoChunk
 from .utils import fetch_playlist_items, fetch_video_details
 import os
+import requests
 
 def register(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            UserProfile.objects.create(user=user) # Create empty profile
+            # UserProfile created by signal
             login(request, user)
-            return redirect('dashboard')
+            return redirect('setup_api_key')
     else:
         form = UserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
 
 @login_required
+def setup_api_key(request):
+    error = None
+    if request.method == 'POST':
+        key = request.POST.get('api_key', '').strip()
+        if not key:
+            error = "API Key cannot be empty."
+        else:
+            # Validate Key with a simple list request
+            try:
+                test_url = "https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&maxResults=1&key=" + key
+                response = requests.get(test_url)
+                data = response.json()
+                
+                if 'error' in data:
+                    reason = data['error'].get('errors', [{}])[0].get('reason', 'Unknown')
+                    if reason == 'quotaExceeded':
+                         error = "This key has exceeded its quota."
+                    elif reason == 'keyInvalid':
+                         error = "Invalid API Key."
+                    else:
+                         error = f"API Error: {data['error']['message']}"
+                else:
+                    # Valid!
+                    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+                    profile.google_api_key = key
+                    profile.save()
+                    return redirect('dashboard')
+            except Exception as e:
+                error = f"Network Error: {str(e)}"
+    
+    return render(request, 'setup_api_key.html', {'error': error})
+
+@login_required
 def dashboard(request):
     exams = request.user.exams.all()
-    # Check if user has API key (Env or DB)
-    from django.conf import settings
-    env_key = getattr(settings, 'GOOGLE_API_KEY', None)
-    if env_key == 'YOUR_API_KEY_HERE':
-        env_key = None
+    # API Key check handled by middleware now.
     
-    try:
-        profile_key = request.user.profile.google_api_key
-    except UserProfile.DoesNotExist:
-        UserProfile.objects.create(user=request.user)
-        profile_key = None
-        
-    has_api_key = bool(env_key or profile_key)
-        
-
-    # --- SKILLS ANALYTICS REMOVED (Moved to dedicated page) ---
     skill_analytics = [] 
 
     today = timezone.now().date()
@@ -49,16 +69,11 @@ def dashboard(request):
     streak, _ = Streak.objects.get_or_create(user=request.user)
     
     # Check for streak reset (if yesterday goal missed)
-    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    profile = request.user.profile
     yesterday_goal = DailyGoal.objects.filter(user=request.user, date=today - timezone.timedelta(days=1)).first()
     
     # Logic: If yesterday had a goal, but it wasn't achieved, reset streak.
-    # We only reset if we haven't already acted on today (to prevent double reset)
-    # Actually, simpler: Current streak is valid if last goal achieved was yesterday OR today.
-    # If last_goal_date < yesterday, reset.
     if profile.last_goal_date and profile.last_goal_date < (today - timezone.timedelta(days=1)):
-        # But wait, what if they didn't set a goal yesterday? Streak might preserve?
-        # User rule: "If Yesterday.goal_achieved was False AND Yesterday had a goal set, reset..."
         if yesterday_goal and not yesterday_goal.achieved:
              profile.current_streak = 0
              profile.save()
@@ -68,7 +83,7 @@ def dashboard(request):
     context = {
         'exams': exams,
         'skill_analytics': skill_analytics,
-        'has_api_key': has_api_key,
+        'has_api_key': True, # Middleware guarantees this
         'todays_goal': todays_goal,
         'show_modal': show_modal,
         'streak': streak,
@@ -99,7 +114,7 @@ def analytics_dashboard(request):
             
             # Calculate Whole Video Hours (exclude chunked videos)
             video_seconds = Video.objects.filter(
-                subject=subject,
+                video__subject=subject,
                 is_watched=True,
                 is_chunked=False
             ).aggregate(
@@ -208,13 +223,8 @@ def analytics_details(request):
 
 @login_required
 def save_api_key(request):
-    if request.method == 'POST':
-        key = request.POST.get('api_key')
-        if key:
-            profile, created = UserProfile.objects.get_or_create(user=request.user)
-            profile.google_api_key = key
-            profile.save()
-    return redirect('dashboard')
+    # Deprecated by setup_api_key, but keeping route to redirect
+    return redirect('setup_api_key')
 
 @login_required
 def create_exam(request):
@@ -324,17 +334,10 @@ def add_playlist(request, subject_id):
     if request.method == 'POST':
         url = request.POST.get('playlist_url')
         
-        from django.conf import settings
-        img_key = getattr(settings, 'GOOGLE_API_KEY', None)
-        if img_key == 'YOUR_API_KEY_HERE':
-            img_key = None
-            
-        profile_key = request.user.profile.google_api_key
-        api_key = img_key if img_key else profile_key
-        
+        # Enforce API Key
+        api_key = request.user.profile.google_api_key
         if not api_key:
-            # Should handle better, but for now redirect
-            return redirect('dashboard')
+            return redirect('setup_api_key')
             
         videos_data = fetch_playlist_items(url, api_key)
         if videos_data:
@@ -347,6 +350,10 @@ def add_playlist(request, subject_id):
                     order=idx,
                     duration_seconds=vid.get('duration', 0)
                 )
+        else:
+            # TODO: Flash error message
+            pass 
+
     return redirect('subject_detail', subject_id=subject.id)
 
 @login_required
@@ -356,14 +363,9 @@ def add_video(request, subject_id):
         url = request.POST.get('video_url')
         mode = request.POST.get('mode', 'whole') # 'whole' or 'chunk'
         
-        # Get Api Key
-        from django.conf import settings
-        img_key = getattr(settings, 'GOOGLE_API_KEY', None)
-        if img_key == 'YOUR_API_KEY_HERE': img_key = None
-        profile_key = request.user.profile.google_api_key
-        api_key = img_key if img_key else profile_key
-        
-        if not api_key: return redirect('dashboard')
+        # Enforce API Key
+        api_key = request.user.profile.google_api_key
+        if not api_key: return redirect('setup_api_key')
         
         details = fetch_video_details(url, api_key)
         if not details:
@@ -457,7 +459,7 @@ def update_video_status(request, video_id):
          goal_seconds = int(daily_goal.goal_hours * 3600)
          if daily_goal.completed_seconds >= goal_seconds and not daily_goal.achieved:
             daily_goal.achieved = True
-            profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            profile = request.user.profile
             streak, _ = Streak.objects.get_or_create(user=request.user)
             profile.current_streak += 1
             profile.last_goal_date = today
@@ -523,7 +525,7 @@ def update_chunk_status(request, chunk_id):
              goal_seconds = int(daily_goal.goal_hours * 3600)
              if daily_goal.completed_seconds >= goal_seconds and not daily_goal.achieved:
                 daily_goal.achieved = True
-                profile, _ = UserProfile.objects.get_or_create(user=request.user)
+                profile = request.user.profile
                 streak, _ = Streak.objects.get_or_create(user=request.user)
                 profile.current_streak += 1
                 profile.last_goal_date = today
@@ -625,7 +627,7 @@ def save_focus_progress(request):
             daily_goal.achieved = True
             
             # Update Streak
-            profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            profile = request.user.profile
             streak, _ = Streak.objects.get_or_create(user=request.user)
             
             profile.current_streak += 1
@@ -726,4 +728,5 @@ def stop_timer(request):
         # For now just log it.
         return JsonResponse({'status': 'stopped', 'seconds': session.total_seconds})
     return JsonResponse({'status': 'error', 'message': 'No running session'})
+
 

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 50px auto; padding: 30px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+    <h2 style="text-align: center; margin-bottom: 20px;">🔑 Setup YouTube API Key</h2>
+    
+    <p style="color: var(--text-secondary); text-align: center; margin-bottom: 30px; line-height: 1.6;">
+        To fetch video durations and playlist details, <strong>Done-Dusted</strong> requires your own YouTube Data API Key.<br>
+        Your key is stored securely and used <em>only</em> for your requests.
+    </p>
+
+    {% if error %}
+    <div style="background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+        <span>⚠️</span>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">YouTube Data API v3 Key</label>
+            <input type="text" name="api_key" placeholder="AIzaSy..." required
+                style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-family: monospace;">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 1.1em;">
+            Validate & Save Key
+        </button>
+    </form>
+    
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+        <h4 style="margin-bottom: 10px;">How to get a key?</h4>
+        <ol style="padding-left: 20px; color: var(--text-secondary); line-height: 1.8;">
+            <li>Go to <a href="https://console.cloud.google.com/" target="_blank" style="color: #3498db;">Google Cloud Console</a>.</li>
+            <li>Create a new project.</li>
+            <li>Enable <strong>YouTube Data API v3</strong>.</li>
+            <li>Go to <strong>Credentials</strong> → <strong>Create Credentials</strong> → <strong>API Key</strong>.</li>
+            <li>Paste the key above.</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}
