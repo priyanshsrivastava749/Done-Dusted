@@ -676,6 +676,29 @@ def delete_playlist(request, subject_id):
 
 @require_POST
 @login_required
+def upload_csv_todo(request, subject_id):
+    subject = get_object_or_404(Subject, id=subject_id, exam__user=request.user)
+    
+    if 'file' not in request.FILES:
+        return JsonResponse({'success': False, 'message': 'No file uploaded'})
+        
+    file = request.FILES['file']
+    
+    if not file.name.endswith('.csv'):
+        return JsonResponse({'success': False, 'message': 'Invalid file type. Please upload a CSV file.'})
+        
+    try:
+        from core.services.csv_importer import import_videos_from_csv
+        # Read file content safely
+        file_data = file.read().decode('utf-8')
+        
+        result = import_videos_from_csv(file_data, subject)
+        return JsonResponse(result)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@require_POST
+@login_required
 def set_global_goal(request):
     import json
     data = json.loads(request.body)

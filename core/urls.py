@@ -26,6 +26,7 @@ urlpatterns = [
     path('exam/<int:exam_id>/delete/', views.delete_exam, name='delete_exam'),
     path('subject/<int:subject_id>/delete/', views.delete_subject, name='delete_subject'),
     path('subject/<int:subject_id>/delete-playlist/', views.delete_playlist, name='delete_playlist'),
+    path('subject/<int:subject_id>/import-csv/', views.upload_csv_todo, name='upload_csv_todo'),
     path('api/set-goal/', views.set_global_goal, name='set_global_goal'),
     path('api/get-today-goal/', views.get_today_goal, name='get_today_goal'),
     path('api/save-focus-progress/', views.save_focus_progress, name='save_focus_progress'),

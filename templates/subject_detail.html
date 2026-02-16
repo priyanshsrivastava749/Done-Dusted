@@ -316,6 +316,17 @@
 
 <!-- Video Checklist View -->
 <div id="view-checklist" class="full-width-section">
+    <!-- CSV Import Zone -->
+    <div id="csv-drop-zone" class="drop-zone"
+        style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px; cursor: pointer; transition: all 0.2s;">
+        <p style="color: var(--text-secondary); margin: 0;">
+            📥 <strong>Drag & Drop CSV</strong> to import tasks
+            <br>
+            <span style="font-size: 0.8em;">(Format: title, duration)</span>
+        </p>
+        <input type="file" id="csv-file-input" accept=".csv" style="display: none;" onchange="handleFileSelect(this)">
+    </div>
+
     {% if videos %}
     <div style="text-align: right; margin-bottom: 10px;">
         <button onclick="confirmDelete('{% url 'delete_playlist' subject.id %}', 'Playlist')" class="btn"
@@ -495,6 +506,101 @@
             }
         });
 
+    }
+
+    // --- CSV Import Logic ---
+    const dropZone = document.getElementById('csv-drop-zone');
+    const fileInput = document.getElementById('csv-file-input');
+
+    if (dropZone) {
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--primary-color)';
+            dropZone.style.background = 'rgba(0,0,0,0.02)';
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border-color)';
+            dropZone.style.background = 'transparent';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border-color)';
+            dropZone.style.background = 'transparent';
+
+            if (e.dataTransfer.files.length) {
+                uploadCSV(e.dataTransfer.files[0]);
+            }
+        });
+    }
+
+    function handleFileSelect(input) {
+        if (input.files.length) {
+            uploadCSV(input.files[0]);
+        }
+    }
+
+    function uploadCSV(file) {
+        if (!file.name.endsWith('.csv')) {
+            alert('Please upload a CSV file.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Show loading state
+        if (dropZone) dropZone.innerHTML = '<p>Uploading...</p>';
+
+        fetch('{% url "upload_csv_todo" subject.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Successfully imported ${data.items_created} tasks!`);
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                    if (data.errors && data.errors.length) {
+                        console.error(data.errors);
+                    }
+                    // Reset drop zone
+                    if (dropZone) {
+                        dropZone.innerHTML = `
+                    <p style="color: var(--text-secondary); margin: 0;">
+                        📥 <strong>Drag & Drop CSV</strong> to import tasks
+                        <br>
+                        <span style="font-size: 0.8em;">(Format: title, duration)</span>
+                    </p>
+                    <input type="file" id="csv-file-input" accept=".csv" style="display: none;" onchange="handleFileSelect(this)">
+                    `;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Upload failed.');
+                // Reset drop zone
+                if (dropZone) {
+                    dropZone.innerHTML = `
+                    <p style="color: var(--text-secondary); margin: 0;">
+                        📥 <strong>Drag & Drop CSV</strong> to import tasks
+                        <br>
+                        <span style="font-size: 0.8em;">(Format: title, duration)</span>
+                    </p>
+                    <input type="file" id="csv-file-input" accept=".csv" style="display: none;" onchange="handleFileSelect(this)">
+                    `;
+                }
+            });
     }
 
     // Disable Image Paste
