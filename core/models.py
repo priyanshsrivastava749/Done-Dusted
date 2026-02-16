@@ -72,7 +72,6 @@ class VideoChunk(models.Model):
 class Note(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='notes')
     content = models.TextField(blank=True, help_text="Markdown/HTML content with LaTeX support")
-    content_screenshots = models.TextField(blank=True, help_text="Lecture screenshots/notes")
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -81,10 +80,6 @@ class Note(models.Model):
     def get_file_path(self):
         # Path: media/notes/subjects/<subject_id>/note.html
         return os.path.join(settings.MEDIA_ROOT, 'notes', 'subjects', str(self.subject.id), 'note.html')
-
-    def get_screenshots_file_path(self):
-        # Path: media/notes/subjects/<subject_id>/screenshots.html
-        return os.path.join(settings.MEDIA_ROOT, 'notes', 'subjects', str(self.subject.id), 'screenshots.html')
 
     def save_content_to_file(self, content):
         file_path = self.get_file_path()
@@ -98,19 +93,6 @@ class Note(models.Model):
             with open(file_path, 'r', encoding='utf-8') as f:
                 return f.read()
         return self.content # Fallback to DB
-
-    def save_screenshots_to_file(self, content):
-        file_path = self.get_screenshots_file_path()
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content)
-            
-    def get_screenshots_from_file(self):
-        file_path = self.get_screenshots_file_path()
-        if os.path.exists(file_path):
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
-        return self.content_screenshots # Fallback to DB
 
 from django.utils import timezone
 

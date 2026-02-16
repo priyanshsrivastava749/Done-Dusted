@@ -402,10 +402,7 @@
     <div class="notes-container">
         <div style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
             <div class="note-toggle-container">
-                <button id="btn-content" class="note-toggle-btn active" onclick="switchNoteType('content')">ChatGPT
-                    Response</button>
-                <button id="btn-screenshots" class="note-toggle-btn" onclick="switchNoteType('screenshots')">Lecture
-                    Screenshots</button>
+                <span style="font-weight: bold; color: var(--text-primary); font-size: 1.1em;">📝 Lecture Notes</span>
             </div>
 
             <div style="display:flex; gap:10px;">
@@ -422,12 +419,10 @@
             </div>
         </div>
 
-        <!-- Editable Divs (Double) -->
+        <!-- Editable Div -->
         <div id="editor-content" class="notion-editor active-editor" contenteditable="true"
-            placeholder="Paste ChatGPT notes here (Supports Markdown Code Blocks)..."></div>
-
-        <div id="editor-screenshots" class="notion-editor" contenteditable="true"
-            placeholder="Paste lecture screenshots here..."></div>
+            placeholder="Paste ChatGPT notes here (Supports Markdown Code Blocks & LaTeX)..."
+            style="min-height: 400px;"></div>
 
         <div style="text-align: right; margin-top: 5px;">
             <button class="btn btn-primary" onclick="saveNotes()">Save Notes</button>
@@ -440,17 +435,15 @@
     console.log("YT API available?", typeof YT !== 'undefined');
 
     const noteId = "{{ note.id }}";
-    let activeNoteType = 'content'; // 'content' or 'screenshots'
+    // activeNoteType removed
 
     // Initial Load - Content Injection
-    // Initial Load - Content Injection via Lazy Loading
-    async function loadNoteContent(type) {
-        const editorId = type === 'content' ? 'editor-content' : 'editor-screenshots';
-        const editor = document.getElementById(editorId);
+    async function loadNoteContent() {
+        const editor = document.getElementById('editor-content');
         editor.innerHTML = '<div style="color: #888; padding: 20px;">Loading notes...</div>';
 
         try {
-            const response = await fetch(`/core/note/${noteId}/content/?type=${type}`);
+            const response = await fetch(`/core/note/${noteId}/content/`);
             if (response.ok) {
                 const text = await response.text();
                 editor.innerHTML = text;
@@ -474,8 +467,7 @@
         }
     }
 
-    loadNoteContent('content');
-    loadNoteContent('screenshots');
+    loadNoteContent();
 
     function highlightAll() {
         document.querySelectorAll('pre code').forEach((block) => {
@@ -484,17 +476,8 @@
     }
     highlightAll();
 
-    function switchNoteType(type) {
-        activeNoteType = type;
-        document.querySelectorAll('.note-toggle-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-${type}`).classList.add('active');
-        document.querySelectorAll('.notion-editor').forEach(ed => ed.classList.remove('active-editor'));
-        document.getElementById(`editor-${type}`).classList.add('active-editor');
-    }
-
     function saveNotes() {
-        const editorFn = activeNoteType === 'content' ? 'editor-content' : 'editor-screenshots';
-        const content = document.getElementById(editorFn).innerHTML;
+        const content = document.getElementById('editor-content').innerHTML;
 
         fetch(`/core/note/${noteId}/save/`, {
             method: 'POST',
@@ -503,14 +486,23 @@
                 'X-CSRFToken': '{{ csrf_token }}'
             },
             body: JSON.stringify({
-                content: content,
-                note_type: activeNoteType
+                content: content
             })
         }).then(() => {
             alert('Notes Saved!');
+            if (window.MathJax) {
+                MathJax.typesetPromise().then(() => { });
+            }
         });
 
     }
+
+    // Disable Image Paste
+    document.getElementById('editor-content').addEventListener('paste', function (e) {
+        e.preventDefault();
+        var text = (e.originalEvent || e).clipboardData.getData('text/plain');
+        document.execCommand('insertText', false, text);
+    });
 
     // --- FLOATING TOOLBAR LOGIC ---
     const toolbar = document.getElementById('floating-toolbar');

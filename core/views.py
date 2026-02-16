@@ -249,12 +249,8 @@ def exam_detail(request, exam_id):
 @login_required
 def get_note_content(request, note_id):
     note = get_object_or_404(Note, id=note_id, subject__exam__user=request.user)
-    note_type = request.GET.get('type', 'content')
-    
-    if note_type == 'screenshots':
-        file_path = note.get_screenshots_file_path()
-    else:
-        file_path = note.get_file_path()
+    # type param ignored, always content
+    file_path = note.get_file_path()
         
     if os.path.exists(file_path):
         return FileResponse(open(file_path, 'rb'))
@@ -548,12 +544,9 @@ def save_note(request, note_id):
     note = get_object_or_404(Note, id=note_id, subject__exam__user=request.user)
     import json
     data = json.loads(request.body)
-    note_type = data.get('note_type', 'content')
+    # note_type = data.get('note_type', 'content') # Removed screenshot support
     
-    if note_type == 'screenshots':
-        note.save_screenshots_to_file(data.get('content', ''))
-    else:
-        note.save_content_to_file(data.get('content', ''))
+    note.save_content_to_file(data.get('content', ''))
         
     note.save() # Update timestamp
     return JsonResponse({'status': 'ok'})
