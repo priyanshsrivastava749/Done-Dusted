@@ -1,76 +1,10 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<style>
-    .notion-editor {
-        min-height: 500px;
-        /* Increased height for standalone page */
-        max-height: 80vh;
-        overflow-y: auto;
-        padding: 40px;
-        background: var(--bg-primary);
-        color: var(--text-primary);
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        outline: none;
-        font-size: 16px;
-        line-height: 1.6;
-        white-space: pre-wrap;
-    }
-
-    .notion-editor:empty:before {
-        content: attr(placeholder);
-        color: var(--text-secondary);
-    }
-
-    .notion-editor h1,
-    .notion-editor h2,
-    .notion-editor h3 {
-        margin-top: 1.5em;
-        margin-bottom: 0.5em;
-        color: var(--text-primary);
-    }
-
-    .notion-editor p {
-        margin-bottom: 1em;
-    }
-
-    .notion-editor ul,
-    .notion-editor ol {
-        margin-left: 20px;
-    }
-
-    .notion-editor blockquote {
-        border-left: 3px solid var(--text-primary);
-        padding-left: 14px;
-        color: var(--text-secondary);
-    }
-
-    .notion-editor code {
-        background: var(--bg-secondary);
-        color: #EB5757;
-        padding: 0.2em 0.4em;
-        border-radius: 3px;
-        font-family: monospace;
-    }
-
-    .notion-editor img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 4px;
-        margin: 10px 0;
-        cursor: pointer;
-    }
-
-    .notes-container {
-        max-width: 900px;
-        margin: 0 auto;
-        background: var(--card-bg);
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    }
-</style>
+<!-- Highlight.js (VS Code Dark) & Marked.js -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <div class="notes-container">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -95,8 +29,9 @@
     </div>
 
     <!-- Editable Div -->
-    <div id="editor" class="notion-editor" contenteditable="true"
-        placeholder="Type here or paste ChatGPT response with Markdown/LaTeX..."></div>
+    <div id="editor" class="notion-editor active-editor" contenteditable="true"
+        placeholder="Type here or paste ChatGPT response with Markdown/LaTeX..." style="display: block !important;">
+    </div>
 
     <div style="text-align: right; margin-top: 15px;">
         <button class="btn btn-primary" onclick="saveNotes()">Save Notes</button>
@@ -105,48 +40,49 @@
 
 <script>
     // Initial Load
-    // note.content is passed from view
     const initialContent = `{{ note.content|escapejs }}`;
-    document.getElementById('editor').innerHTML = initialContent;
+    const editor = document.getElementById('editor');
+    editor.innerHTML = initialContent;
 
     // Trigger math render on load
     if (window.MathJax) {
-        MathJax.typesetPromise([document.getElementById('editor')]).then(() => {
+        MathJax.typesetPromise([editor]).then(() => {
             document.querySelectorAll('mjx-container').forEach(el => el.removeAttribute('tabindex'));
         });
     }
 
+    // Highlight Code Blocks
+    document.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block);
+    });
+
     function formatDoc(cmd, value = null) {
         document.execCommand(cmd, false, value);
-        document.getElementById('editor').focus();
+        editor.focus();
     }
 
     function changeFontSize(size) {
         if (!size) return;
-
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
             alert("Please select some text first.");
             return;
         }
-
         const span = document.createElement("span");
         span.style.fontSize = size;
-
         try {
             const range = selection.getRangeAt(0);
             const content = range.extractContents();
             span.appendChild(content);
             range.insertNode(span);
         } catch (e) {
-            console.error("Could not apply font size", e);
+            console.error(e);
         }
-
         document.getElementById('fontSizeSelect').selectedIndex = 0;
     }
 
     function saveNotes() {
-        const content = document.getElementById('editor').innerHTML;
+        const content = editor.innerHTML;
         fetch("{% url 'save_common_note' %}", {
             method: 'POST',
             headers: {
@@ -159,61 +95,56 @@
         });
     }
 
+    // --- PASTE LOGIC (Critical Fix) ---
+    editor.addEventListener('paste', function (e) {
+        e.preventDefault();
+        var text = (e.originalEvent || e).clipboardData.getData('text/plain');
+        document.execCommand('insertText', false, text);
+
+        // Auto-sanitize after paste
+        setTimeout(() => sanitizeEditor(editor), 50);
+    });
+
+    // --- SANITIZE LOGIC ---
+    function sanitizeEditor(editorElement) {
+        if (!editorElement) return;
+        editorElement.querySelectorAll('*').forEach(el => {
+            // Remove fixed font sizes/colors/backgrounds
+            if (el.style.fontSize) el.style.fontSize = '';
+            if (el.style.backgroundColor) el.style.backgroundColor = '';
+            if (el.style.color) el.style.color = '';
+            el.removeAttribute('data-font-size');
+        });
+    }
+
     function downloadPDF() {
         var printWindow = window.open('', '', 'height=600,width=800');
         printWindow.document.write('<html><head><title>Common Notes Export</title>');
-        printWindow.document.write('<style>body{font-family:sans-serif; padding: 40px;} img {max-width:100%;}</style>');
+        // Inject Highlight.js CSS
+        printWindow.document.write('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">');
+
+        printWindow.document.write('<style>');
+        printWindow.document.write(`
+            @media print {
+                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                pre { background-color: #1E1E1E !important; color: #dcdcdc !important; }
+            }
+            body { font-family: sans-serif; padding: 40px; } 
+            img { max-width:100%; }
+            pre { background: #1E1E1E !important; border-radius: 6px; padding: 1em; color: #dcdcdc; white-space: pre-wrap; }
+        `);
+        printWindow.document.write('</style>');
+
         printWindow.document.write('<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"><\/script>');
         printWindow.document.write('</head><body>');
         printWindow.document.write('<h1>Common Notes</h1>');
-        printWindow.document.write(document.getElementById('editor').innerHTML);
+        printWindow.document.write(editor.innerHTML);
         printWindow.document.write('</body></html>');
         printWindow.document.close();
 
         setTimeout(() => {
             printWindow.print();
         }, 1500);
-    }
-
-    function addMarkdown() {
-        const editor = document.getElementById('editor');
-        const text = editor.innerText;
-
-        if (typeof marked === 'undefined') {
-            alert('Markdown library not loaded. Please refresh the page.');
-            return;
-        }
-
-        const mathBlocks = [];
-        let processedText = text.replace(/\$\$([\s\S]+?)\$\$/g, function (match) {
-            mathBlocks.push(match);
-            return `MATH_BLOCK_${mathBlocks.length - 1}`;
-        });
-
-        processedText = processedText.replace(/\$([^\$\n]+?)\$/g, function (match) {
-            mathBlocks.push(match);
-            return `MATH_INLINE_${mathBlocks.length - 1}`;
-        });
-
-        let html = marked.parse(processedText);
-
-        html = html.replace(/MATH_BLOCK_(\d+)/g, function (match, id) {
-            return mathBlocks[parseInt(id)];
-        });
-
-        html = html.replace(/MATH_INLINE_(\d+)/g, function (match, id) {
-            return mathBlocks[parseInt(id)];
-        });
-
-        editor.innerHTML = html;
-
-        if (window.MathJax) {
-            MathJax.typesetPromise([editor]).then(() => {
-                document.querySelectorAll('mjx-container').forEach(el => el.removeAttribute('tabindex'));
-            }).catch(err => {
-                console.error('MathJax Error:', err);
-            });
-        }
     }
 </script>
 {% endblock %}
