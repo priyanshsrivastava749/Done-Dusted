@@ -257,6 +257,9 @@
         </nav>
         {% endif %}
 
+        <!-- Mobile Sidebar Overlay -->
+        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
         <main class="main-content">
             {% if user.is_authenticated %}
             <button id="sidebar-toggle" class="btn btn-sidebar-toggle">
@@ -308,12 +311,16 @@
     </div>
 
     <script>
+        function toggleSidebar() {
+            document.querySelector('.layout').classList.toggle('sidebar-collapsed');
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) sidebar.classList.toggle('active');
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const toggleBtn = document.getElementById('sidebar-toggle');
             if (toggleBtn) {
-                toggleBtn.addEventListener('click', function () {
-                    document.querySelector('.layout').classList.toggle('sidebar-collapsed');
-                });
+                toggleBtn.addEventListener('click', toggleSidebar);
             }
         });
 
