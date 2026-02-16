@@ -1,152 +1,132 @@
-# Done-Dusted 🎯
+# 🎯 Done-Dusted
 
-**Done-Dusted** is a productivity and video tracking application designed to help users manage their study goals, track video progress, and maintain consistency through analytics and streaks. It allows users to create goals, mark videos as completed, and stay focused using a built-in timer.
+> **"Master Your Study Goals with Precision."**
+
+**Done-Dusted** is your ultimate productivity companion designed to streamline video course tracking and study sessions. Whether you're preparing for exams or mastering a new skill, Done-Dusted keeps you accountable with smart analytics, focus timers, and goal management.
 
 ---
 
-## 🚀 Project Overview
+## 🚀 Key Features
 
-This project helps students and learners:
-- **Track Progress**: Monitor completion status of video courses.
-- **Set Goals**: Create daily study targets and track hours.
-- **Analyze Performance**: View detailed analytics and study streaks.
-- **Stay Focused**: Use a built-in focus timer (Pomodoro-style) to log deep work sessions.
-- **Smart Notes**: Generate AI-powered notes for videos (integrated with Google Gemini).
+- **📊 Smart Analytics**: Visualize your daily streaks, study hours, and completion rates.
+- **🎯 Goal Management**: Set custom study goals and track progress against deadlines.
+- **🎥 Video Tracking**: Seamlessly track video courses (YouTube integration) and mark progress.
+- **⏱️ Focus Mode**: Built-in Pomodoro-style timer to maximize deep work sessions.
+- **📝 AI-Powered Notes**: Generate smart summaries and notes for your videos using Google Gemini.
+- **🐳 Dockerized**: Fully containerized for easy deployment and consistent environments.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Django (Python)
-- **Database**: SQLite (Default)
-- **Frontend**: HTML5, CSS3 (Vanilla), JavaScript
-- **API Integration**: Google API Client (YouTube/Gemini)
+| Component | Technology | Description |
+| :--- | :--- | :--- |
+| **Backend** | ![Django](https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white) | Robust Python web framework. |
+| **Database** | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white) | Lightweight default database. |
+| **Frontend** | ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css3&logoColor=white) | Clean, responsive UI. |
+| **AI** | ![Google Gemini](https://img.shields.io/badge/Google%20Gemini-8E75B2?style=flat&logo=google&logoColor=white) | Intelligent note generation. |
+| **DevOps** | ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white) | Containerization & Orchestration. |
 
 ---
 
 ## 📋 Prerequisites
 
-Before you begin, ensure you have the following installed:
-- **Python** (v3.8 or higher)
-- **pip** (Python package installer)
-- **Git** (for version control)
+To run this project, you need:
+
+- **Docker Desktop** (Recommended)
+- *OR*
+- **Python 3.10+** & **Git**
 
 ---
 
-## ⚡ Installation Steps
+## ⚡ Quick Start (Docker Recommended)
 
-Follow these steps to set up the project locally.
+The easiest way to run the application is with Docker.
 
-### 1. Clone the Repository
-Open your terminal and run:
-```bash
-git clone <repository-url>
-cd Done-Dusted
-```
+1.  **Clone the Repository**
+    ```bash
+    git clone https://github.com/priyanshsrivastava749/Done-Dusted.git
+    cd Done-Dusted
+    ```
 
-### 2. Create Virtual Environment
-It is recommended to use a virtual environment to manage dependencies.
+2.  **Run with Docker Compose**
+    ```bash
+    docker-compose up --build
+    ```
 
-**Windows:**
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
+3.  **Access the App**
+    Open your browser and visit: `http://localhost:8000`
 
-**macOS / Linux:**
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-Install all required Python packages:
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Environment Setup
-Create a `.env` file in the root directory (where `manage.py` is located) to store sensitive keys:
-
-```ini
-# .env file
-SECRET_KEY=your_django_secret_key
-DEBUG=True
-GOOGLE_API_KEY=your_google_api_key
-```
-> **Note**: You need a Google API Key for video tracking and AI features.
-
-### 5. Database Setup
-Initialize the database tables:
-```bash
-python manage.py migrate
-```
-
-(Optional) Create an admin user to access the Django Admin panel:
-```bash
-python manage.py createsuperuser
-```
-
-### 6. Run the Server
-Start the local development server:
-```bash
-python manage.py runserver
-```
-
-Open your browser and navigate to:
-`http://127.0.0.1:8000/`
+> **Note**: Your database and media files are persisted locally on your machine, so your data is safe even if you restart the containers.
 
 ---
 
-## 📖 Usage
+## 🐢 Manual Setup (Without Docker)
 
-1. **Dashboard**: Upon logging in, you will see your daily streaks and active goals.
-2. **Add Goals/Exams**: Use the "+ New Goal" button to create a new subject or exam to track.
-3. **Track Videos**: Go to a subject page and paste a YouTube playlist URL (if supported) or manually add videos.
-4. **Mark as Done**: Click the checkbox next to a video to mark it as completed. Your progress bar will update automatically.
-5. **Focus Timer**: Use the timer widget at the bottom right to track your study sessions.
+If you prefer running it manually:
+
+1.  **Create Virtual Environment**
+    ```bash
+    python -m venv venv
+    # Windows
+    venv\Scripts\activate
+    # macOS/Linux
+    source venv/bin/activate
+    ```
+
+2.  **Install Dependencies**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3.  **Configure Environment**
+    Create a `.env` file in the root directory:
+    ```ini
+    SECRET_KEY=your_secret_key
+    DEBUG=True
+    GOOGLE_API_KEY=your_google_api_key
+    ```
+
+4.  **Run Migrations & Server**
+    ```bash
+    python manage.py migrate
+    python manage.py runserver
+    ```
 
 ---
 
-## 📂 Folder Structure
-
-Here is a quick overview of the main folders:
+## � Project Structure
 
 ```
 Done-Dusted/
-├── core/                 # Main application logic (views, models, urls)
-├── done_dusted/          # Project configuration (settings.py, wsgi.py)
-├── static/               # Static assets (CSS, JS, Images)
-├── templates/            # HTML Templates
-├── db.sqlite3            # Database file
-├── manage.py             # Django command-line utility
-└── requirements.txt      # Project dependencies
+├── core/                 # 🧠 Application Logic (Views, Models, Serializers)
+├── done_dusted/          # ⚙️ Project Settings & Config
+├── static/               # 🎨 CSS, JS, Images
+├── templates/            # 📄 HTML Templates
+├── docker-compose.yml    # 🐳 Docker Orchestration
+├── Dockerfile            # 📦 Image Definition
+└── requirements.txt      # 📦 Python Dependencies
 ```
 
 ---
 
-## 🔧 Common Errors & Fixes
+## 🤝 Contributing
 
-**1. `ModuleNotFoundError`**
-- **Cause**: Dependencies are not installed or virtual environment is not active.
-- **Fix**: Activate venv and run `pip install -r requirements.txt`.
-
-**2. `TemplateSyntaxError`**
-- **Cause**: Issues with HTML template tags.
-- **Fix**: Check recent changes in `templates/` folder or ensure all `{% block %}` tags are closed.
-
-**3. Database Issues (no tables)**
-- **Cause**: Migrations not applied.
-- **Fix**: Run `python manage.py migrate`.
+Contributions are welcome!
+1.  Fork the repository.
+2.  Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4.  Push to the branch (`git push origin feature/AmazingFeature`).
+5.  Open a Pull Request.
 
 ---
 
-## 🔮 Future Improvements
+## � License
 
-- [ ] Add dark mode toggle.
-- [ ] Integration with more video platforms.
-- [ ] Mobile-responsive app version.
-- [ ] Advanced graphical analytics.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
-*Happy Coding!* 🚀
+
+<div align="center">
+    Made with ❤️ by <b>Priyansh Srivastava</b>
+</div>
