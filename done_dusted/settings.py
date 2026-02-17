@@ -35,9 +35,9 @@ if env_file.exists():
 SECRET_KEY = 'django-insecure-n5vfvy(q=(byd3mt-k8s(h^hv+e0jnyg!p#cge2$*bd4ogvpx+'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['sachinsrivastava749.pythonanywhere.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'sachinsrivastava749.pythonanywhere.com,localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -89,7 +89,7 @@ WSGI_APPLICATION = 'done_dusted.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'data' / 'db.sqlite3',
     }
 }
 

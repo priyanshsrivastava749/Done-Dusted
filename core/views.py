@@ -114,7 +114,7 @@ def analytics_dashboard(request):
             
             # Calculate Whole Video Hours (exclude chunked videos)
             video_seconds = Video.objects.filter(
-                video__subject=subject,
+                subject=subject,
                 is_watched=True,
                 is_chunked=False
             ).aggregate(

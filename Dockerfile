@@ -15,8 +15,11 @@ RUN pip install --upgrade pip && \
 # Copy project
 COPY . /app/
 
+# Create directory for static files and media
+RUN mkdir -p /app/staticfiles /app/media /app/data
+
 # Expose port
 EXPOSE 8000
 
-# Run server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Run server using Gunicorn
+CMD ["gunicorn", "done_dusted.wsgi:application", "--bind", "0.0.0.0:8000"]
