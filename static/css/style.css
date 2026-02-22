@@ -61,7 +61,6 @@ a {
     display: flex;
     min-height: 100vh;
     overflow-x: hidden;
-    align-items: flex-start;
     /* CRITICAL: prevents sidebar from stretching, enabling position: sticky */
 }
 
@@ -75,16 +74,18 @@ a {
     flex-direction: column;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    z-index: 100;
-    transition: transform 0.3s ease, width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+    z-index: 1000;
+    transition: transform 0.3s ease, width 0.3s ease, padding 0.3s ease, opacity 0.3s ease, left 0.3s ease;
     height: 100vh;
-    position: sticky;
+    position: fixed;
     top: 0;
-    overflow-y: auto;
+    left: 0;
+    overflow-y: hidden;
+    overflow-x: hidden;
 }
 
 .layout.sidebar-collapsed .sidebar {
-    width: 0;
+    left: -250px;
     padding-left: 0;
     padding-right: 0;
     overflow: hidden;
@@ -110,6 +111,8 @@ a {
     max-width: 100%;
     min-height: 100vh;
     /* Keeps the gradient filling the screen */
+    margin-left: 250px;
+    transition: margin-left 0.3s ease, padding-top 0.3s ease;
 }
 
 /* --- Headings --- */
@@ -640,6 +643,7 @@ tr.watched td:nth-child(2) {
 
 /* Main content adjusts padding when toggle is visible */
 .layout.sidebar-collapsed .main-content {
+    margin-left: 0;
     padding-top: 60px;
     /* Make room for toggle button */
 }

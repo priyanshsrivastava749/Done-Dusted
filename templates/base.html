@@ -302,6 +302,14 @@
         src="data:audio/mp3;base64,SUQzBAAAAAAAI1RTSVMAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
         preload="auto"></audio>
 
+    <!-- Hidden Timer Icon -->
+    <div id="minimizedTimerIcon"
+        style="display:none; position:fixed; bottom:20px; right:20px; background:var(--accent); color:#fff; width:50px; height:50px; border-radius:50%; align-items:center; justify-content:center; box-shadow:0 10px 40px rgba(0,0,0,0.6); z-index:9999; cursor:pointer; font-size:24px; transition: transform 0.2s;"
+        onclick="toggleTimerVisibility()" title="Show Timer" onmouseover="this.style.transform='scale(1.1)'"
+        onmouseout="this.style.transform='scale(1)'">
+        ⏱️
+    </div>
+
     <!-- Global Floating Timer HTML -->
     <div id="globalTimerWidget" class="global-timer-widget">
         <div style="display: flex; flex-direction: column; line-height: 1;">
@@ -309,9 +317,25 @@
         </div>
         <span id="gTimerDisplay" class="timer-time">--:--:--</span>
         <button id="gTimerBtn" class="timer-c-btn timer-start" onclick="toggleGlobalTimer()">▶</button>
+        <button onclick="toggleTimerVisibility()"
+            style="background:transparent; border:none; color:#95a5a6; font-size:16px; cursor:pointer; margin-left:5px; transition:color 0.2s;"
+            onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#95a5a6'"
+            title="Minimize Timer">✖</button>
     </div>
 
     <script>
+        function toggleTimerVisibility() {
+            const widget = document.getElementById('globalTimerWidget');
+            const icon = document.getElementById('minimizedTimerIcon');
+            if (widget.style.display !== 'none') {
+                widget.style.display = 'none';
+                icon.style.display = 'flex';
+            } else {
+                widget.style.display = 'flex';
+                icon.style.display = 'none';
+            }
+        }
+
         function toggleSidebar() {
             document.querySelector('.layout').classList.toggle('sidebar-collapsed');
             const sidebar = document.querySelector('.sidebar');
