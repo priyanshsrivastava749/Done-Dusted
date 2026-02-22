@@ -64,22 +64,20 @@ def dashboard(request):
     
     skill_analytics = [] 
 
-    today = timezone.now().date()
+    today = timezone.localdate()
     todays_goal = DailyGoal.objects.filter(user=request.user, date=today).first()
     show_modal = not todays_goal
     streak, _ = Streak.objects.get_or_create(user=request.user)
     
     # Check for streak reset (if yesterday goal missed)
     profile = request.user.profile
-    yesterday_goal = DailyGoal.objects.filter(user=request.user, date=today - timezone.timedelta(days=1)).first()
     
-    # Logic: If yesterday had a goal, but it wasn't achieved, reset streak.
+    # Logic: If last goal achieved was before yesterday, reset streak.
     if profile.last_goal_date and profile.last_goal_date < (today - timezone.timedelta(days=1)):
-        if yesterday_goal and not yesterday_goal.achieved:
-             profile.current_streak = 0
-             profile.save()
-             streak.current_streak = 0
-             streak.save()
+        profile.current_streak = 0
+        profile.save()
+        streak.current_streak = 0
+        streak.save()
     
     context = {
         'exams': exams,
@@ -283,7 +281,7 @@ def subject_detail(request, subject_id):
     progress = (completed_items / total_items * 360) if total_items > 0 else 0
     
     # Daily Progress
-    today = timezone.now().date()
+    today = timezone.localdate()
     daily_log, _ = DailyStudyLog.objects.get_or_create(user=request.user, subject=subject, date=today)
     today_minutes = round(daily_log.seconds_watched / 60, 1)
     
@@ -426,7 +424,7 @@ def update_video_status(request, video_id):
     video.save()
     
     # Update Daily Log
-    today = timezone.now().date()
+    today = timezone.localdate()
     # Ensure log exists for this specific subject
     daily_log, _ = DailyStudyLog.objects.get_or_create(
         user=request.user, 
@@ -498,7 +496,7 @@ def update_chunk_status(request, chunk_id):
     chunk.save()
     
     # Update Daily Log
-    today = timezone.now().date()
+    today = timezone.localdate()
     daily_log, _ = DailyStudyLog.objects.get_or_create(
         user=request.user, 
         subject=chunk.video.subject, 
@@ -582,7 +580,7 @@ def save_common_note(request):
     return JsonResponse({'status': 'ok'})
 @login_required
 def get_today_goal(request):
-    today = timezone.now().date()
+    today = timezone.localdate()
     # Try to find existing goal
     daily_goal = DailyGoal.objects.filter(user=request.user, date=today).first()
     
@@ -606,7 +604,7 @@ def save_focus_progress(request):
     data = json.loads(request.body)
     new_seconds = int(data.get('seconds', 0)) # This is incremental seconds to ADD
     
-    today = timezone.now().date()
+    today = timezone.localdate()
     daily_goal = DailyGoal.objects.filter(user=request.user, date=today).first()
     
     if not daily_goal:
@@ -700,7 +698,7 @@ def set_global_goal(request):
     import json
     data = json.loads(request.body)
     hours = float(data.get('hours', 0))
-    today = timezone.now().date()
+    today = timezone.localdate()
     
     obj, created = DailyGoal.objects.get_or_create(user=request.user, date=today, defaults={'goal_hours': hours})
     if not created:

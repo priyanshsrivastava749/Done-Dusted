@@ -99,7 +99,7 @@ from django.utils import timezone
 class DailyStudyLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_logs')
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='study_logs')
-    date = models.DateField(default=timezone.now)
+    date = models.DateField(default=timezone.localdate)
     seconds_watched = models.PositiveIntegerField(default=0)
     daily_goal_minutes = models.PositiveIntegerField(default=0)
     goal_achieved = models.BooleanField(default=False)
@@ -140,14 +140,14 @@ class StudySession(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField(null=True, blank=True)
     total_seconds = models.PositiveIntegerField(default=0)
-    date = models.DateField(default=timezone.now)
+    date = models.DateField(default=timezone.localdate)
 
     def __str__(self):
         return f"Pro Session - {self.user.username} - {self.date}"
 
 class DailyGoal(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='daily_goals')
-    date = models.DateField(default=timezone.now)
+    date = models.DateField(default=timezone.localdate)
     goal_hours = models.FloatField()
     completed_seconds = models.PositiveIntegerField(default=0)
     is_completed = models.BooleanField(default=False)
