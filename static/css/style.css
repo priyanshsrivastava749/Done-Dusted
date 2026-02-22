@@ -624,7 +624,8 @@ tr.watched td:nth-child(2) {
     position: fixed;
     top: 22px;
     left: 20px;
-    z-index: 101;
+    z-index: 1001;
+    /* Ensure above sidebar */
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 4px;
@@ -638,14 +639,13 @@ tr.watched td:nth-child(2) {
 
 /* Hide the toggle button by default if sidebar is NOT collapsed */
 .layout:not(.sidebar-collapsed) .btn-sidebar-toggle {
-    display: none;
+    left: 270px;
+    /* Shift it out of the sidebar */
 }
 
 /* Main content adjusts padding when toggle is visible */
 .layout.sidebar-collapsed .main-content {
     margin-left: 0;
-    padding-top: 60px;
-    /* Make room for toggle button */
 }
 
 /* Scrollbar */
