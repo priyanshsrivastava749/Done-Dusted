@@ -233,7 +233,13 @@
     <div class="layout">
         {% if user.is_authenticated %}
         <nav class="sidebar">
-            <h3>Done-Dusted</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <h3 style="margin-bottom: 0;">Done-Dusted</h3>
+                <button id="sidebar-toggle" class="btn btn-sidebar-toggle" title="Toggle Sidebar"
+                    style="position: relative; top: auto; left: auto; display: block;">
+                    &#9776;
+                </button>
+            </div>
             <div style="margin-top: 20px;">
                 <a href="{% url 'dashboard' %}" class="btn" style="width: 100%; text-align: left; border:none;">🏠
                     Dashboard</a>
@@ -260,9 +266,9 @@
         <!-- Mobile Sidebar Overlay -->
         <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-        <!-- Desktop/Mobile Sidebar Toggle Button -->
+        <!-- Floating Open Button (Visible only when sidebar is collapsed) -->
         {% if user.is_authenticated %}
-        <button id="sidebar-toggle" class="btn btn-sidebar-toggle" title="Toggle Sidebar">
+        <button class="btn btn-sidebar-open" onclick="toggleSidebar()" title="Open Sidebar">
             &#9776;
         </button>
         {% endif %}

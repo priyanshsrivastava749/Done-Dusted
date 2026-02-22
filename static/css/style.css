@@ -620,30 +620,46 @@ tr.watched td:nth-child(2) {
     transform: rotate(15deg);
 }
 
-.btn-sidebar-toggle {
+/* Specific styling for the toggle inside the sidebar */
+.sidebar .btn-sidebar-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 24px;
+    padding: 0;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.sidebar .btn-sidebar-toggle:hover {
+    color: var(--accent);
+}
+
+/* 
+  Since the sidebar gets completely hidden (width:0, left:-250px) 
+  we need a floating button to OPEN the sidebar when it's closed.
+*/
+.btn-sidebar-open {
     position: fixed;
     top: 22px;
     left: 20px;
     z-index: 1001;
-    /* Ensure above sidebar */
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 4px;
     padding: 5px 10px;
     font-size: 20px;
     color: var(--text-primary);
-    transition: left 0.3s ease, opacity 0.3s ease;
+    display: none;
+    /* Hidden by default when sidebar is open */
+}
+
+/* Show the floating open button ONLY when sidebar is collapsed */
+.layout.sidebar-collapsed .btn-sidebar-open {
     display: block;
-    /* Show on desktop too */
 }
 
-/* Hide the toggle button by default if sidebar is NOT collapsed */
-.layout:not(.sidebar-collapsed) .btn-sidebar-toggle {
-    left: 270px;
-    /* Shift it out of the sidebar */
-}
-
-/* Main content adjusts padding when toggle is visible */
+/* Main content adjusts padding when sidebar is collapsed */
 .layout.sidebar-collapsed .main-content {
     margin-left: 0;
 }
