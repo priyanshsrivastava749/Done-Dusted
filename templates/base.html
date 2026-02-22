@@ -468,11 +468,9 @@
 
             if (!isRunning) {
                 // START
-                // We need to know 'remaining seconds' which we either have cached or need to fetch
                 let duration = localStorage.getItem('timerRemainingStatic');
 
                 if (!duration) {
-                    // Fetch mostly for safety
                     const res = await fetch("{% url 'get_today_goal' %}");
                     const data = await res.json();
                     if (data.status !== 'ok') {
@@ -498,23 +496,26 @@
             } else {
                 // STOP
                 stopGlobalTicker();
-                // We need to calculate how much we actually did.
-                // In a perfect world, we sync exact diff. 
-                // Because `startGlobalTicker` saves incrementally, we just need to ensure the final residual is saved.
+
+                // Calculate exactly how much time is left when paused
+                const startTime = parseInt(localStorage.getItem('timerStartTime'));
+                const originalDuration = parseInt(localStorage.getItem('timerTotalDuration'));
+                const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+                const newRemaining = originalDuration - elapsedSec;
+
+                // Save the new remaining time so it resumes from here
+                localStorage.setItem('timerRemainingStatic', newRemaining);
+
                 if (gUnsavedSeconds > 0) {
                     await saveGlobalProgress(gUnsavedSeconds);
                     gUnsavedSeconds = 0;
                 }
 
-                // Clear state
+                // Clear running state
                 localStorage.removeItem('timerStartTime');
                 localStorage.removeItem('timerTotalDuration');
 
-                // Refresh remaining static for display
-                const res = await fetch("{% url 'get_today_goal' %}");
-                const data = await res.json();
-                if (data.status === 'ok') updateGlobalDisplay(data.remaining_seconds);
-
+                updateGlobalDisplay(newRemaining);
                 showGlobalToast("Focus Paused.");
             }
         }
@@ -531,50 +532,25 @@
                 const now = Date.now();
                 const elapsedMS = now - startTimestamp;
                 const elapsedSec = Math.floor(elapsedMS / 1000);
-
                 const remaining = totalDurationSeconds - elapsedSec;
 
                 updateGlobalDisplay(remaining);
 
-                // Save logic
-                // We need to track how much we haven't saved.
-                // This is tricky with absolute timestamps.
-                // Simpler approach: We just assume we entered this loop 1 sec ago.
-                // We increment a local counter.
-                gUnsavedSeconds++;
-
-                if (gUnsavedSeconds >= 10) {
-                    saveGlobalProgress(gUnsavedSeconds);
-                    gUnsavedSeconds = 0;
-                }
-
                 if (remaining <= 0) {
-                    // Goal Achieved -> Overtime Mode
-                    // We don't stop, we just update display to show overtime
-                    updateGlobalDisplay(remaining);
-
-                    // Check if we just crossed the line
                     if (remaining === 0 || remaining === -1) {
                         showGlobalToast("Goal Achieved! 🎉 You're in Overtime!");
-                        // Optional: Play sound
-                        const audio = new Audio('https://actions.google.com/sounds/v1/cartoon/clank_car_crash.ogg'); // Placeholder or use existing alarm
-                        // alarm.play(); 
                     }
-                } else {
-                    updateGlobalDisplay(remaining);
                 }
 
-                // Save logic
-                // We need to track how much we haven't saved.
-                // This is tricky with absolute timestamps.
-                // Simpler approach: We just assume we entered this loop 1 sec ago.
-                // We increment a local counter.
                 gUnsavedSeconds++;
 
                 if (gUnsavedSeconds >= 10) {
                     saveGlobalProgress(gUnsavedSeconds);
                     gUnsavedSeconds = 0;
                 }
+
+                // Continuously update the static remaining in case of page reload while running
+                localStorage.setItem('timerRemainingStatic', remaining);
 
             }, 1000);
         }
