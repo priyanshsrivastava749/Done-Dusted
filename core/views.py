@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import models
+from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
@@ -346,9 +347,9 @@ def add_playlist(request, subject_id):
                     order=idx,
                     duration_seconds=vid.get('duration', 0)
                 )
+            messages.success(request, f"Successfully added {len(videos_data)} videos from playlist.")
         else:
-            # TODO: Flash error message
-            pass 
+            messages.error(request, 'Failed to fetch playlist items. Please check the URL and your API Key.')
 
     return redirect('subject_detail', subject_id=subject.id)
 
@@ -633,10 +634,7 @@ def save_focus_progress(request):
             
         daily_goal.is_completed = True
         
-        # Streak Update
-        streak, _ = Streak.objects.get_or_create(user=request.user)
-        # Assuming achieving daily goal increments streak? 
-        # Previous logic might handle streaks differently, but let's ensure it's marked "achieved"
+        # Streak logic is handled above by checking if it wasn't achieved yet
         pass 
 
     daily_goal.save()
@@ -667,11 +665,10 @@ def delete_subject(request, subject_id):
 def delete_playlist(request, subject_id):
     subject = get_object_or_404(Subject, id=subject_id, exam__user=request.user)
     try:
-        subject.videos.all().delete()
+        count, _ = subject.videos.all().delete()
+        messages.success(request, f"Successfully deleted {count} videos from playlist.")
     except Exception as e:
-        # In a real app we might log this or flash a message
-        print(f"Error deleting playlist: {e}")
-        pass
+        messages.error(request, f"Error deleting playlist: {e}")
     return redirect('subject_detail', subject_id=subject.id)
 
 @require_POST
@@ -714,9 +711,7 @@ def set_global_goal(request):
 @require_POST
 @login_required
 def update_goal_status(request):
-    # Check if goal calculated dynamically or manually?
-    # Usually strictly time based.
-    pass 
+    return JsonResponse({'status': 'not_implemented'})
 
 @require_POST
 @login_required
