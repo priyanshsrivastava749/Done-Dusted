@@ -46,7 +46,8 @@ body {
     background-color: var(--bg-primary);
     margin: 0;
     line-height: 1.6;
-    overflow-x: hidden; /* Prevent horizontal scroll only */
+    overflow-x: hidden;
+    /* Prevent horizontal scroll only */
     width: 100vw;
 }
 
@@ -60,6 +61,8 @@ a {
     display: flex;
     min-height: 100vh;
     overflow-x: hidden;
+    align-items: flex-start;
+    /* CRITICAL: prevents sidebar from stretching, enabling position: sticky */
 }
 
 /* Sidebar - Glassmorphism */
@@ -102,14 +105,32 @@ a {
     flex: 1;
     padding: 30px 50px;
     background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-    width: 100%; /* Ensure it takes full width */
+    width: 100%;
+    /* Ensure it takes full width */
     max-width: 100%;
+    min-height: 100vh;
+    /* Keeps the gradient filling the screen */
 }
 
 /* --- Headings --- */
-h1 { font-size: 32px; margin-bottom: 20px; font-weight: 700; letter-spacing: -1px; }
-h2 { font-size: 24px; margin-bottom: 15px; font-weight: 700; }
-h3 { font-size: 18px; margin-bottom: 10px; font-weight: 600; }
+h1 {
+    font-size: 32px;
+    margin-bottom: 20px;
+    font-weight: 700;
+    letter-spacing: -1px;
+}
+
+h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
 
 /* --- Buttons --- */
 .btn {
@@ -214,8 +235,15 @@ h3 { font-size: 18px; margin-bottom: 10px; font-weight: 600; }
 }
 
 /* --- Inputs --- */
-.input-group { margin-bottom: 20px; }
-input[type="text"], input[type="password"], input[type="number"], textarea, select {
+.input-group {
+    margin-bottom: 20px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
     width: 100%;
     padding: 12px 16px;
     border: 1px solid var(--border-color);
@@ -228,7 +256,11 @@ input[type="text"], input[type="password"], input[type="number"], textarea, sele
     transition: border-color 0.2s;
 }
 
-input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--accent);
+}
 
 /* --- Tables --- */
 /* Responsive Table Wrapper */
@@ -245,7 +277,8 @@ table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    min-width: 600px; /* Force minimum width to trigger scroll on small screens */
+    min-width: 600px;
+    /* Force minimum width to trigger scroll on small screens */
 }
 
 th {
@@ -266,15 +299,23 @@ td {
     border-bottom: 1px solid var(--border-color);
 }
 
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: var(--bg-secondary); }
+tr:last-child td {
+    border-bottom: none;
+}
+
+tr:hover td {
+    background: var(--bg-secondary);
+}
 
 /* Watched row style */
 tr.watched td {
     opacity: 0.6;
     background: var(--bg-secondary);
 }
-tr.watched td:nth-child(2) { text-decoration: line-through; }
+
+tr.watched td:nth-child(2) {
+    text-decoration: line-through;
+}
 
 /* --- Dashboard Specifics (Consolidated) --- */
 .dashboard-header {
@@ -323,8 +364,17 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-.stat-title { color: var(--text-secondary); font-size: 0.9em; margin-bottom: 10px; }
-.stat-value { font-size: 2em; font-weight: bold; color: var(--text-primary); }
+.stat-title {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.stat-value {
+    font-size: 2em;
+    font-weight: bold;
+    color: var(--text-primary);
+}
 
 .gate-breakdown {
     background: var(--card-bg);
@@ -341,7 +391,10 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     padding: 12px 0;
     border-bottom: 1px solid var(--border-color);
 }
-.subject-row:last-child { border-bottom: none; }
+
+.subject-row:last-child {
+    border-bottom: none;
+}
 
 /* --- Subject Detail Specifics (Consolidated) --- */
 .note-toggle-container {
@@ -379,7 +432,8 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     overflow-y: auto;
     padding: 40px;
     background: var(--bg-primary);
-    color: #ffffff; /* User request: keep as is? Revert to Text Primary? Kept as per source. */
+    color: #ffffff;
+    /* User request: keep as is? Revert to Text Primary? Kept as per source. */
     caret-color: var(--text-primary);
     border: 1px solid var(--border-color);
     border-radius: 4px;
@@ -390,16 +444,36 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     display: none;
     max-width: 100%;
 }
-.notion-editor.active-editor { display: block; }
-.notion-editor:empty:before { content: attr(placeholder); color: var(--text-secondary); }
+
+.notion-editor.active-editor {
+    display: block;
+}
+
+.notion-editor:empty:before {
+    content: attr(placeholder);
+    color: var(--text-secondary);
+}
 
 /* Override editor Colors for Visibility */
-.notion-editor h1, .notion-editor h2, .notion-editor h3, .notion-editor h4, .notion-editor h5, .notion-editor h6 {
-    margin-top: 1.5em; margin-bottom: 0.5em; color: var(--text-primary) !important;
-}
-.notion-editor p, .notion-editor div, .notion-editor li, .notion-editor strong, .notion-editor b {
+.notion-editor h1,
+.notion-editor h2,
+.notion-editor h3,
+.notion-editor h4,
+.notion-editor h5,
+.notion-editor h6 {
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
     color: var(--text-primary) !important;
 }
+
+.notion-editor p,
+.notion-editor div,
+.notion-editor li,
+.notion-editor strong,
+.notion-editor b {
+    color: var(--text-primary) !important;
+}
+
 .notion-editor blockquote {
     border-left: 3px solid var(--text-primary);
     padding-left: 14px;
@@ -416,6 +490,7 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     border: 1px solid #333;
     max-width: 100%;
 }
+
 .notion-editor pre code {
     background: transparent !important;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
@@ -440,7 +515,8 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
 
 /* Progress Circle */
 .progress-circle {
-    width: 60px; /* Default size from template */
+    width: 60px;
+    /* Default size from template */
     height: 60px;
     border-radius: 50%;
     background: conic-gradient(var(--accent) var(--progress), var(--bg-secondary) 0deg);
@@ -449,6 +525,7 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     justify-content: center;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
+
 .progress-inner {
     width: 50px;
     height: 50px;
@@ -473,6 +550,7 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     border: 1px solid var(--border-color);
     width: fit-content;
 }
+
 .view-toggle-btn {
     padding: 10px 24px;
     border-radius: 8px;
@@ -484,6 +562,7 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     transition: all 0.2s;
     font-size: 15px;
 }
+
 .view-toggle-btn.active {
     background: var(--card-bg);
     color: var(--accent);
@@ -501,6 +580,7 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
     gap: 5px;
 }
+
 #floating-toolbar button {
     background: transparent;
     border: none;
@@ -511,7 +591,10 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     font-weight: 600;
     cursor: pointer;
 }
-#floating-toolbar button:hover { background: #444; }
+
+#floating-toolbar button:hover {
+    background: #444;
+}
 
 /* Toggles and Widgets */
 .theme-toggle-btn {
@@ -528,7 +611,11 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     font-size: 18px;
     transition: all 0.3s;
 }
-.theme-toggle-btn:hover { background: var(--bg-secondary); transform: rotate(15deg); }
+
+.theme-toggle-btn:hover {
+    background: var(--bg-secondary);
+    transform: rotate(15deg);
+}
 
 .btn-sidebar-toggle {
     position: fixed;
@@ -542,7 +629,8 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     font-size: 20px;
     color: var(--text-primary);
     transition: left 0.3s ease, opacity 0.3s ease;
-    display: block; /* Show on desktop too */
+    display: block;
+    /* Show on desktop too */
 }
 
 /* Hide the toggle button by default if sidebar is NOT collapsed */
@@ -552,14 +640,29 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
 
 /* Main content adjusts padding when toggle is visible */
 .layout.sidebar-collapsed .main-content {
-    padding-top: 60px; /* Make room for toggle button */
+    padding-top: 60px;
+    /* Make room for toggle button */
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
-* { scrollbar-width: thin; scrollbar-color: var(--accent) transparent; }
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 3px;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
+}
 
 
 /* =========================================
@@ -575,34 +678,41 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
 
 /* --- Tablet Portrait (768px) --- */
 @media (max-width: 768px) {
+
     /* Layout */
     .layout {
-        flex-direction: column; /* Stack layout? Or using slide-out sidebar */
+        flex-direction: column;
+        /* Stack layout? Or using slide-out sidebar */
     }
 
     .sidebar {
         position: fixed;
-        left: -260px; /* Hide off-screen */
+        left: -260px;
+        /* Hide off-screen */
         height: 100vh;
         z-index: 1000;
-        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     }
 
     .sidebar.active {
         left: 0;
         transform: translateX(0);
     }
-    
+
     /* Overlay when sidebar is active */
     .sidebar-overlay {
         display: none;
         position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.5);
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
         z-index: 900;
         backdrop-filter: blur(2px);
     }
-    .sidebar.active + .sidebar-overlay {
+
+    .sidebar.active+.sidebar-overlay {
         display: block;
     }
 
@@ -632,9 +742,10 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
         flex-direction: column;
         align-items: flex-start;
         gap: 20px;
-        margin-top: 40px; /* Space for toggle */
+        margin-top: 40px;
+        /* Space for toggle */
     }
-    
+
     .streak-card {
         width: 100%;
         justify-content: center;
@@ -646,7 +757,7 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
         align-items: flex-start !important;
         gap: 20px;
     }
-    
+
     .view-toggle-container {
         width: 100%;
         justify-content: center;
@@ -659,19 +770,24 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
         padding: 15px;
     }
 
-    h1 { font-size: 24px; }
-    h2 { font-size: 20px; }
+    h1 {
+        font-size: 24px;
+    }
+
+    h2 {
+        font-size: 20px;
+    }
 
     /* Tables */
     .table-responsive {
         border: 1px solid var(--border-color);
     }
-    
+
     /* Stats Grid */
     .analytics-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .exams-grid {
         grid-template-columns: 1fr;
     }
@@ -681,7 +797,7 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
         width: 95%;
         padding: 20px;
     }
-    
+
     .notion-editor {
         padding: 15px;
     }
@@ -690,17 +806,18 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
 /* --- Mobile Small (480px) --- */
 @media (max-width: 480px) {
     .btn {
-        width: 100%; /* Full width buttons on very small screens */
+        width: 100%;
+        /* Full width buttons on very small screens */
         justify-content: center;
     }
-    
+
     .subject-row {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
     }
-    
-    .subject-row > div {
+
+    .subject-row>div {
         width: 100%;
         display: flex;
         justify-content: space-between;
