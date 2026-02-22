@@ -11,9 +11,9 @@
 - **📊 Smart Analytics**: Visualize your daily streaks, study hours, and completion rates.
 - **🎯 Goal Management**: Set custom study goals and track progress against deadlines.
 - **🎥 Video Tracking**: Seamlessly track video courses (YouTube integration) and mark progress.
-- **⏱️ Focus Mode**: Built-in Pomodoro-style timer to maximize deep work sessions.
+- **⏱️ Focus Mode & Persistence**: Built-in Pomodoro-style timer to maximize deep work sessions. Accurately persists across reloads via `localStorage` with a minimize/hide toggle mechanism.
+- **📱 True Responsiveness**: An explicitly fixed, scroll-independent Sidebar that collapses smoothly with dedicated toggle buttons for both Desktop and Mobile environments. 
 - **📝 AI-Powered Notes**: Generate smart summaries and notes for your videos using Google Gemini.
-- **🐳 Dockerized**: Fully containerized for easy deployment and consistent environments.
 
 ---
 
@@ -25,7 +25,6 @@
 | **Database** | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white) | Lightweight default database. |
 | **Frontend** | ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css3&logoColor=white) | Clean, responsive UI. |
 | **AI** | ![Google Gemini](https://img.shields.io/badge/Google%20Gemini-8E75B2?style=flat&logo=google&logoColor=white) | Intelligent note generation. |
-| **DevOps** | ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white) | Containerization & Orchestration. |
 
 ---
 
@@ -33,15 +32,14 @@
 
 To run this project, you need:
 
-- **Docker Desktop** (Recommended)
-- *OR*
-- **Python 3.10+** & **Git**
+- **Python 3.10+**
+- **Git**
 
 ---
 
-## ⚡ Quick Start (Docker Recommended)
+## ⚡ Quick Start
 
-The easiest way to run the application is with Docker.
+The easiest way to run the application on Windows is to use the provided setup script.
 
 1.  **Clone the Repository**
     ```bash
@@ -49,19 +47,25 @@ The easiest way to run the application is with Docker.
     cd Done-Dusted
     ```
 
-2.  **Run with Docker Compose**
-    ```bash
-    docker-compose up --build
+2.  **Add your API Keys**
+    Create a `.env` file in the root directory:
+    ```ini
+    SECRET_KEY=your_secret_key
+    DEBUG=True
+    GOOGLE_API_KEY=your_google_api_key
     ```
 
-3.  **Access the App**
-    Open your browser and visit: `http://localhost:8000`
+3.  **Run with the Setup Script**
+    ```bash
+    .\run_server.bat
+    ```
+    This script automatically creates a virtual environment, installs the dependencies from `requirements.txt`, applies database migrations, and starts the Django development server on `http://127.0.0.1:8000/`.
 
-> **Note**: Your database and media files are persisted locally on your machine, so your data is safe even if you restart the containers.
+> **Note**: Your database and media files are persisted locally on your machine, so your data is safe even between restarts.
 
 ---
 
-## 🐢 Manual Setup (Without Docker)
+## 🐢 Manual Setup
 
 If you prefer running it manually:
 
@@ -103,8 +107,7 @@ Done-Dusted/
 ├── done_dusted/          # ⚙️ Project Settings & Config
 ├── static/               # 🎨 CSS, JS, Images
 ├── templates/            # 📄 HTML Templates
-├── docker-compose.yml    # 🐳 Docker Orchestration
-├── Dockerfile            # 📦 Image Definition
+├── run_server.bat        # 🚀 Windows Auto-Start Script
 └── requirements.txt      # 📦 Python Dependencies
 ```
 
