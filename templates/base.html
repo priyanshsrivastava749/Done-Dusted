@@ -260,15 +260,16 @@
         <!-- Mobile Sidebar Overlay -->
         <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
+        <!-- Desktop/Mobile Sidebar Toggle Button -->
+        {% if user.is_authenticated %}
+        <button id="sidebar-toggle" class="btn btn-sidebar-toggle" title="Toggle Sidebar">
+            &#9776;
+        </button>
+        {% endif %}
+
         <main class="main-content">
-            {% if user.is_authenticated %}
-            <button id="sidebar-toggle" class="btn btn-sidebar-toggle">
-                &#9776;
-            </button>
-            {% endif %}
             {% block content %}
             {% endblock %}
-        </main>
         </main>
     </div>
 

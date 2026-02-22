@@ -73,15 +73,17 @@ a {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     z-index: 100;
-    transition: transform 0.3s ease, width 0.3s ease;
+    transition: transform 0.3s ease, width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
     height: 100vh;
     position: sticky;
     top: 0;
+    overflow-y: auto;
 }
 
 .layout.sidebar-collapsed .sidebar {
     width: 0;
-    padding: 0;
+    padding-left: 0;
+    padding-right: 0;
     overflow: hidden;
     opacity: 0;
     border: none;
@@ -531,14 +533,26 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
 .btn-sidebar-toggle {
     position: fixed;
     top: 22px;
-    left: 270px; /* Sidebar width + padding */
+    left: 20px;
     z-index: 101;
-    background: transparent;
-    border: none;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 5px 10px;
     font-size: 20px;
     color: var(--text-primary);
-    transition: left 0.3s ease;
-    display: none; /* Hidden on desktop by default? */
+    transition: left 0.3s ease, opacity 0.3s ease;
+    display: block; /* Show on desktop too */
+}
+
+/* Hide the toggle button by default if sidebar is NOT collapsed */
+.layout:not(.sidebar-collapsed) .btn-sidebar-toggle {
+    display: none;
+}
+
+/* Main content adjusts padding when toggle is visible */
+.layout.sidebar-collapsed .main-content {
+    padding-top: 60px; /* Make room for toggle button */
 }
 
 /* Scrollbar */
@@ -599,13 +613,18 @@ tr.watched td:nth-child(2) { text-decoration: line-through; }
     }
 
     .btn-sidebar-toggle {
-        display: block;
+        display: block !important;
         left: 20px;
         top: 20px;
         background: var(--card-bg);
         border: 1px solid var(--border-color);
         border-radius: 4px;
         padding: 5px 10px;
+    }
+
+    /* Keep toggle button visible regardless of sidebar state on mobile, or just let overlay handle it */
+    .layout:not(.sidebar-collapsed) .btn-sidebar-toggle {
+        display: block;
     }
 
     /* Dashboard */
