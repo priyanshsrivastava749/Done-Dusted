@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, FileResponse, HttpResponse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from .models import Exam, Subject, Video, Note, UserProfile, DailyStudyLog, CommonNote, StudySession, DailyGoal, Streak, VideoChunk
+from .models import Exam, Subject, Video, UserProfile, DailyStudyLog, StudySession, DailyGoal, Streak, VideoChunk
 from .utils import fetch_playlist_items, fetch_video_details
 import os
 import requests
@@ -245,15 +245,6 @@ def exam_detail(request, exam_id):
             return redirect('exam_detail', exam_id=exam.id)
     return render(request, 'exam_detail.html', {'exam': exam, 'subjects': subjects})
 
-@login_required
-def get_note_content(request, note_id):
-    note = get_object_or_404(Note, id=note_id, subject__exam__user=request.user)
-    # type param ignored, always content
-    file_path = note.get_file_path()
-        
-    if os.path.exists(file_path):
-        return FileResponse(open(file_path, 'rb'))
-    return HttpResponse("")
 
 @login_required
 def subject_detail(request, subject_id):
@@ -275,9 +266,7 @@ def subject_detail(request, subject_id):
             if v.is_watched:
                 completed_items += 1
                 
-    note, created = Note.objects.get_or_create(subject=subject)
-    # CONTENT LOAD REMOVED - Handled by lazy loading via get_note_content
-    
+
     progress = (completed_items / total_items * 360) if total_items > 0 else 0
     
     # Daily Progress
@@ -312,7 +301,6 @@ def subject_detail(request, subject_id):
     return render(request, 'subject_detail.html', {
         'subject': subject,
         'videos': videos,
-        'note': note,
         'progress': progress,
         'total': total_items,
         'completed': completed_items,
@@ -537,18 +525,7 @@ def update_chunk_status(request, chunk_id):
         'today_minutes': today_minutes
     })
 
-@require_POST
-@login_required
-def save_note(request, note_id):
-    note = get_object_or_404(Note, id=note_id, subject__exam__user=request.user)
-    import json
-    data = json.loads(request.body)
-    # note_type = data.get('note_type', 'content') # Removed screenshot support
-    
-    note.save_content_to_file(data.get('content', ''))
-        
-    note.save() # Update timestamp
-    return JsonResponse({'status': 'ok'})
+
 
 @require_POST
 @login_required
@@ -562,22 +539,7 @@ def set_daily_goal(request, subject_id):
         pass
     return redirect('subject_detail', subject_id=subject.id)
 
-@login_required
-def common_note_view(request):
-    note, created = CommonNote.objects.get_or_create(user=request.user)
-    # Load content from file
-    note.content = note.get_content_from_file()
-    return render(request, 'common_note.html', {'note': note})
 
-@require_POST
-@login_required
-def save_common_note(request):
-    note, created = CommonNote.objects.get_or_create(user=request.user)
-    import json
-    data = json.loads(request.body)
-    note.save_content_to_file(data.get('content', ''))
-    note.save() # Update timestamp
-    return JsonResponse({'status': 'ok'})
 @login_required
 def get_today_goal(request):
     today = timezone.localdate()

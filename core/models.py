@@ -69,31 +69,6 @@ class VideoChunk(models.Model):
     def __str__(self):
         return f"{self.video.title} - {self.title}"
 
-class Note(models.Model):
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='notes')
-    content = models.TextField(blank=True, help_text="Markdown/HTML content with LaTeX support")
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"Notes for {self.subject.name}"
-    
-    def get_file_path(self):
-        # Path: media/notes/subjects/<subject_id>/note.html
-        return os.path.join(settings.MEDIA_ROOT, 'notes', 'subjects', str(self.subject.id), 'note.html')
-
-    def save_content_to_file(self, content):
-        file_path = self.get_file_path()
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content)
-            
-    def get_content_from_file(self):
-        file_path = self.get_file_path()
-        if os.path.exists(file_path):
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
-        return self.content # Fallback to DB
-
 from django.utils import timezone
 
 class DailyStudyLog(models.Model):
@@ -109,31 +84,6 @@ class DailyStudyLog(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.subject.name} - {self.date}"
-
-class CommonNote(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='common_note')
-    content = models.TextField(blank=True, help_text="Common scratchpad content")
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"Common Note for {self.user.username}"
-
-    def get_file_path(self):
-        # Path: media/notes/users/<user_id>/common_note.html
-        return os.path.join(settings.MEDIA_ROOT, 'notes', 'users', str(self.user.id), 'common_note.html')
-
-    def save_content_to_file(self, content):
-        file_path = self.get_file_path()
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content)
-            
-    def get_content_from_file(self):
-        file_path = self.get_file_path()
-        if os.path.exists(file_path):
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
-        return self.content # Fallback to DB
 
 class StudySession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_sessions')
