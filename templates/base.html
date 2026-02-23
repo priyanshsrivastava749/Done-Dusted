@@ -320,6 +320,20 @@
 </head>
 
 <body>
+    <!-- Mobile Top Bar (visible only ≤768px) -->
+    {% if user.is_authenticated %}
+    <div class="mobile-top-bar">
+        <button class="mobile-hamburger" onclick="toggleSidebar()" title="Open Menu">&#9776;</button>
+        <span class="mobile-top-title">Done-Dusted</span>
+        <div class="mobile-top-actions">
+            <a href="https://priyanshsrivastava749.github.io/Personal-Portfolio/" class="mobile-dev-link"
+                title="Meet the Developer" target="_blank">🚀</a>
+            <button class="theme-toggle-btn mobile-theme-toggle" onclick="toggleTheme()"
+                title="Toggle Dark Mode">🌓</button>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="layout">
         {% if user.is_authenticated %}
         <nav class="sidebar">

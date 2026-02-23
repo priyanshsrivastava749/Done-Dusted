@@ -24,7 +24,7 @@
 <!-- SKILLS Analytics Section -->
 <!-- Analytics Summary Card -->
 <div style="margin-bottom: 40px;">
-    <div
+    <div class="analytics-summary-card"
         style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
         <div>
             <h2 style="margin: 0; font-size: 1.5em;">Study Analytics</h2>
@@ -33,7 +33,7 @@
         </div>
         <a href="{% url 'analytics_dashboard' %}" class="btn btn-primary"
             style="padding: 12px 25px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-            <span>📊</span> View Detailed Analytics
+            <span>📊</span> View Analytics
         </a>
     </div>
 </div>
@@ -48,12 +48,12 @@
 
 <div class="exams-grid">
     {% for exam in exams %}
-    <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="card exam-card-flex" style="display: flex; justify-content: space-between; align-items: center;">
         <a href="{% url 'exam_detail' exam.id %}" style="text-decoration: none; color: inherit; flex-grow: 1;">
             <h3>{{ exam.name }}</h3>
             <p style="color: var(--text-secondary)">{{ exam.subjects.count }} Subjects</p>
         </a>
-        <button onclick="confirmDelete('{% url 'delete_exam' exam.id %}', 'Exam')" class="btn"
+        <button onclick="confirmDelete('{% url 'delete_exam' exam.id %}', 'Exam')" class="btn btn-delete-icon"
             style="background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 5px 10px;"
             title="Delete Exam">🗑️</button>
     </div>
