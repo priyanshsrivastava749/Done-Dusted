@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Done-Dusted</title>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=3">
     <script>
         // Initialize Theme
         (function () {
@@ -322,7 +322,7 @@
 <body>
     <!-- Mobile Top Bar (visible only ≤768px) -->
     {% if user.is_authenticated %}
-    <div class="mobile-top-bar">
+    <div class="mobile-top-bar" style="flex-wrap:nowrap;">
         <button class="mobile-hamburger" onclick="toggleSidebar()" title="Open Menu">&#9776;</button>
         <span class="mobile-top-title">Done-Dusted</span>
         <div class="mobile-top-actions">
