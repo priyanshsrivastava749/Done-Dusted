@@ -195,6 +195,77 @@
 
 
 <script>
+    // --- Toggle Watched (Regular Videos) ---
+    function toggleWatched(videoId, checkbox) {
+        fetch(`/core/video/${videoId}/status/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ is_watched: checkbox.checked })
+        }).then(r => r.json()).then(data => {
+            if (data.today_minutes !== undefined) {
+                const el = document.getElementById('today-minutes');
+                if (el) el.innerText = data.today_minutes;
+            }
+            location.reload();
+        });
+    }
+
+    // --- CSV Import Logic ---
+    const dropZone = document.getElementById('csv-drop-zone');
+    const fileInput = document.getElementById('csv-file-input');
+
+    if (dropZone) {
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--primary-color)';
+            dropZone.style.background = 'rgba(0,0,0,0.02)';
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border-color)';
+            dropZone.style.background = 'transparent';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border-color)';
+            dropZone.style.background = 'transparent';
+            if (e.dles.length) {
+                uploadCSV(e.dataTransfer.files[0]);
+            }
+        });
+    }
+
+    function handleFileSelect(input) {
+        if (input.files.length) uploadCSV(input.files[0]);
+    }
+
+    function uploadCSV(file) {
+        if (!file.name.endsWith('.csv')) { alert('Please upload a CSV file.'); return; }
+        const formData = new FormData();
+        formData.append('file', file);
+        if (dropZone) dropZone.innerHTML = '<p>Uploading...</p>';
+
+        fetch('{% url "upload_csv_todo" subject.id %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Successfully imported ${data.items_created} tasks!`);
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => { console.error('Error:', error); alert('Upload failed.'); });
+    }
+
     // --- Video Modal Logic ---
     function openVideoModal() {
         document.getElementById('videoModal').style.display = 'flex';
