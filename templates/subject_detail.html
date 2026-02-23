@@ -8,10 +8,9 @@
         <a href="{% url 'exam_detail' subject.exam.id %}" style="color: #666;">← Back to {{ subject.exam.name }}</a>
         <h1>{{ subject.name }}</h1>
     </div>
-    <div style="display: flex; align-items: center; gap: 20px;">
-        <div
+    <div class="subject-stats-row" style="display: flex; align-items: center; gap: 20px;">
+        <div class="subject-stats-badge"
             style="background: var(--bg-secondary); padding: 8px 15px; border-radius: 8px; font-size: 0.9em; display: flex; gap: 15px; align-items: center; border: 1px solid var(--border-color);">
-            <!-- New Hours Metrics -->
             <div>
                 <strong>{{ watched_hours }} hrs</strong> watched
                 <span style="color: var(--text-secondary); margin: 0 5px;">|</span>
@@ -109,9 +108,8 @@
 
     {% if videos %}
     <div style="text-align: right; margin-bottom: 10px;">
-        <button onclick="confirmDelete('{% url 'delete_playlist' subject.id %}', 'Playlist')" class="btn"
-            style="background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 5px 10px; font-size: 0.8em;"
-            title="Delete All Videos">🗑️ Delete Playlist</button>
+        <button onclick="confirmDelete('{% url 'delete_playlist' subject.id %}', 'Playlist')"
+            class="btn btn-delete-icon" title="Delete All Videos">🗑️ Delete Playlist</button>
     </div>
     <div class="table-responsive">
         <table>
@@ -254,16 +252,16 @@
             headers: { 'X-CSRFToken': '{{ csrf_token }}' },
             body: formData
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(`Successfully imported ${data.items_created} tasks!`);
-                window.location.reload();
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => { console.error('Error:', error); alert('Upload failed.'); });
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Successfully imported ${data.items_created} tasks!`);
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => { console.error('Error:', error); alert('Upload failed.'); });
     }
 
     // --- Video Modal Logic ---

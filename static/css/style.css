@@ -746,6 +746,27 @@ tr.watched td:nth-child(2) {
 }
 
 
+/* --- Delete Icon Button (base style) --- */
+.btn-delete-icon {
+    background: rgba(231, 76, 60, 0.1) !important;
+    color: #e74c3c !important;
+    border: 1px solid rgba(231, 76, 60, 0.3) !important;
+    padding: 8px 12px !important;
+    border-radius: 10px !important;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.btn-delete-icon:hover {
+    background: rgba(231, 76, 60, 0.2) !important;
+    border-color: #e74c3c !important;
+    transform: scale(1.05);
+}
+
+
 /* =========================================
    RESPONSIVE DESIGN (Refactor)
    ========================================= */
@@ -878,6 +899,46 @@ tr.watched td:nth-child(2) {
         width: auto !important;
         min-width: 44px;
         flex-shrink: 0;
+        padding: 8px 14px !important;
+    }
+
+    /* Subject detail - stats row */
+    .subject-stats-row {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 12px !important;
+        width: 100%;
+    }
+
+    .subject-stats-badge {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        padding: 12px 16px !important;
+        border-radius: 12px !important;
+        font-size: 0.95em !important;
+    }
+
+    .subject-stats-row .progress-circle {
+        align-self: center;
+    }
+
+    /* Exam detail - add subject form */
+    .add-subject-form {
+        flex-direction: column !important;
+    }
+
+    .add-subject-form input {
+        width: 100% !important;
+    }
+
+    .add-subject-form .btn {
+        width: 100%;
+    }
+
+    /* Subject cards grid */
+    .subjects-grid {
+        grid-template-columns: 1fr !important;
     }
 
     /* Analytics Dashboard - goal header stacking */

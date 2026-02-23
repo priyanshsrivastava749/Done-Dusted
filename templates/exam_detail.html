@@ -10,7 +10,7 @@
 
 <div class="card" style="margin-top: 20px;">
     <h3>Add Subject</h3>
-    <form method="post" style="display: flex; gap: 10px;">
+    <form method="post" class="add-subject-form" style="display: flex; gap: 10px;">
         {% csrf_token %}
         <input type="text" name="name" placeholder="Subject Name (e.g. Operating Systems)" required>
         <button type="submit" class="btn btn-primary">Add Subject</button>
@@ -18,16 +18,16 @@
 </div>
 
 <h2 style="margin-top: 40px;">Subjects</h2>
-<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
+<div class="subjects-grid"
+    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
     {% for subject in subjects %}
-    <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="card subject-card" style="display: flex; justify-content: space-between; align-items: center;">
         <a href="{% url 'subject_detail' subject.id %}" style="text-decoration: none; color: inherit; flex-grow: 1;">
             <h3>{{ subject.name }}</h3>
-            <p>{{ subject.videos.count }} Videos</p>
-            <p style="color: #666; font-size: 0.9em;">Click to Study</p>
+            <p style="color: var(--text-secondary); font-size: 0.95em;">{{ subject.videos.count }} Videos</p>
+            <p style="color: var(--accent); font-size: 0.8em; font-weight: 600;">Click to Study →</p>
         </a>
-        <button onclick="confirmDelete('{% url 'delete_subject' subject.id %}', 'Subject')" class="btn"
-            style="background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 5px 10px;"
+        <button onclick="confirmDelete('{% url 'delete_subject' subject.id %}', 'Subject')" class="btn btn-delete-icon"
             title="Delete Subject">🗑️</button>
     </div>
     {% empty %}
