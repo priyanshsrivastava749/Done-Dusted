@@ -398,11 +398,12 @@
         const gTimerDisplay = document.getElementById('gTimerDisplay');
         const gTimerBtn = document.getElementById('gTimerBtn');
         let gTimerInterval;
-        let gUnsavedSeconds = 0;
+        let gPendingProgress = false;
 
         // On Load
         document.addEventListener('DOMContentLoaded', async function () {
             console.log("Timer Widget Loaded");
+            syncOfflineProgress();
             // Check if we have a goal (to determine if we should show the widget)
             // But to save requests, we usually only show if user interacts or we know state.
             // For now, let's always 'try' to fetch state or check localStorage.
@@ -430,6 +431,31 @@
                         }
                     }
                 } catch (e) { console.log('Timer init failed', e); }
+            }
+        });
+
+        // Ensure we pause the timer if the user closes the tab!
+        window.addEventListener('beforeunload', function () {
+            const startTime = parseInt(localStorage.getItem('timerStartTime'));
+            if (startTime) {
+                const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+                const sentSecs = parseInt(localStorage.getItem('timerSentSeconds') || '0');
+                const unsent = elapsedSec - sentSecs;
+
+                // Immediately queue unsent seconds so they survive the browser close
+                if (unsent > 0) {
+                    let offlineSecs = parseInt(localStorage.getItem('offlineFocusSeconds') || '0');
+                    localStorage.setItem('offlineFocusSeconds', (offlineSecs + unsent).toString());
+                }
+
+                // Update the static remaining so it resumes properly
+                const originalDuration = parseInt(localStorage.getItem('timerTotalDuration'));
+                localStorage.setItem('timerRemainingStatic', originalDuration - elapsedSec);
+
+                // Clear running state
+                localStorage.removeItem('timerStartTime');
+                localStorage.removeItem('timerTotalDuration');
+                localStorage.removeItem('timerSentSeconds');
             }
         });
 
@@ -489,6 +515,7 @@
                 const now = Date.now(); // ms
                 localStorage.setItem('timerStartTime', now);
                 localStorage.setItem('timerTotalDuration', duration);
+                localStorage.setItem('timerSentSeconds', '0');
 
                 startGlobalTicker(now, duration);
                 showGlobalToast("Focus Mode ON! 🚀");
@@ -506,14 +533,16 @@
                 // Save the new remaining time so it resumes from here
                 localStorage.setItem('timerRemainingStatic', newRemaining);
 
-                if (gUnsavedSeconds > 0) {
-                    await saveGlobalProgress(gUnsavedSeconds);
-                    gUnsavedSeconds = 0;
+                let sentSecs = parseInt(localStorage.getItem('timerSentSeconds') || '0');
+                let unsent = elapsedSec - sentSecs;
+                if (unsent > 0) {
+                    await saveGlobalProgress(unsent, true);
                 }
 
                 // Clear running state
                 localStorage.removeItem('timerStartTime');
                 localStorage.removeItem('timerTotalDuration');
+                localStorage.removeItem('timerSentSeconds');
 
                 updateGlobalDisplay(newRemaining);
                 showGlobalToast("Focus Paused.");
@@ -542,11 +571,12 @@
                     }
                 }
 
-                gUnsavedSeconds++;
+                let sentSecs = parseInt(localStorage.getItem('timerSentSeconds') || '0');
+                let unsent = elapsedSec - sentSecs;
 
-                if (gUnsavedSeconds >= 10) {
-                    saveGlobalProgress(gUnsavedSeconds);
-                    gUnsavedSeconds = 0;
+                if (unsent >= 10 && !gPendingProgress) {
+                    gPendingProgress = true;
+                    saveGlobalProgress(unsent, false).finally(() => { gPendingProgress = false; });
                 }
 
                 // Continuously update the static remaining in case of page reload while running
@@ -566,9 +596,16 @@
         async function finishGlobalTimer() {
             // This is now only called manually or if we want to force stop
             stopGlobalTicker();
-            if (gUnsavedSeconds > 0) await saveGlobalProgress(gUnsavedSeconds);
+            const startTime = parseInt(localStorage.getItem('timerStartTime'));
+            if (startTime) {
+                const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+                let sentSecs = parseInt(localStorage.getItem('timerSentSeconds') || '0');
+                let unsent = elapsedSec - sentSecs;
+                if (unsent > 0) await saveGlobalProgress(unsent, true);
+            }
             localStorage.removeItem('timerStartTime');
             localStorage.removeItem('timerTotalDuration');
+            localStorage.removeItem('timerSentSeconds');
 
             // Fetch actual status to be clean
             const res = await fetch("{% url 'get_today_goal' %}");
@@ -578,7 +615,42 @@
             showGlobalToast("Session Ended. Great work!");
         }
 
-        async function saveGlobalProgress(secs) {
+        async function syncOfflineProgress() {
+            let offlineSecs = parseInt(localStorage.getItem('offlineFocusSeconds') || '0');
+            if (offlineSecs > 0) {
+                try {
+                    const res = await fetch("{% url 'save_focus_progress' %}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ seconds: offlineSecs })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status === 'ok') {
+                            localStorage.setItem('offlineFocusSeconds', '0');
+                            console.log("Offline progress synced:", offlineSecs);
+                        } else if (data.status === 'no_goal') {
+                            localStorage.setItem('offlineFocusSeconds', '0');
+                        }
+                    }
+                } catch (e) { }
+            }
+        }
+
+        function handleNewDay() {
+            stopGlobalTicker();
+            localStorage.removeItem('timerStartTime');
+            localStorage.removeItem('timerTotalDuration');
+            localStorage.removeItem('timerSentSeconds');
+            localStorage.removeItem('offlineFocusSeconds');
+            alert("A new day has started! Let's set your new daily goal.");
+            window.location.href = "{% url 'dashboard' %}";
+        }
+
+        async function saveGlobalProgress(secs, isStop = false) {
             try {
                 const res = await fetch("{% url 'save_focus_progress' %}", {
                     method: 'POST',
@@ -588,7 +660,28 @@
                     },
                     body: JSON.stringify({ seconds: secs })
                 });
-            } catch (e) { console.error(e); }
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'ok') {
+                        if (!isStop) {
+                            let sentSecs = parseInt(localStorage.getItem('timerSentSeconds') || '0');
+                            localStorage.setItem('timerSentSeconds', (sentSecs + secs).toString());
+                        }
+                        return true;
+                    } else if (data.status === 'no_goal') {
+                        handleNewDay();
+                        return false;
+                    }
+                }
+            } catch (e) {
+                console.warn("Network error saving progress. Local sync enabled.", e);
+            }
+
+            if (isStop) {
+                let offlineSecs = parseInt(localStorage.getItem('offlineFocusSeconds') || '0');
+                localStorage.setItem('offlineFocusSeconds', (offlineSecs + secs).toString());
+            }
+            return false;
         }
     </script>
 </body>

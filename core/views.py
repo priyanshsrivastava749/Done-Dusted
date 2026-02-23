@@ -608,7 +608,7 @@ def save_focus_progress(request):
     daily_goal = DailyGoal.objects.filter(user=request.user, date=today).first()
     
     if not daily_goal:
-        return JsonResponse({'status': 'error', 'message': 'No goal found'})
+        return JsonResponse({'status': 'no_goal', 'message': 'No goal found for today'})
         
     daily_goal.completed_seconds += new_seconds
     
