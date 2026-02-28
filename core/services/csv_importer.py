@@ -3,19 +3,42 @@ import io
 from django.db import models
 from core.models import Video, Subject
 
+import re
+
 def parse_duration(duration_str):
     """
-    Parses duration string (MM:SS or HH:MM:SS) into seconds.
+    Parses duration string (MM:SS, HH:MM:SS, "10 mins", "1.5 hours", "120") into seconds.
     Returns 0 if invalid.
     """
-    parts = duration_str.strip().split(':')
+    duration_str = str(duration_str).strip().lower()
+    if not duration_str:
+        return 0
+        
+    if ':' in duration_str:
+        parts = duration_str.split(':')
+        try:
+            if len(parts) == 2:
+                return int(parts[0]) * 60 + int(parts[1])
+            elif len(parts) == 3:
+                return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+        except ValueError:
+            pass
+            
+    # Try to extract numbers
+    # If it's just a number, assume minutes
     try:
-        if len(parts) == 2:
-            return int(parts[0]) * 60 + int(parts[1])
-        elif len(parts) == 3:
-            return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+        match = re.search(r'([\d\.]+)', duration_str)
+        if match:
+            val = float(match.group(1))
+            if 'sec' in duration_str:
+                return int(val)
+            elif 'hr' in duration_str or 'hour' in duration_str:
+                return int(val * 3600)
+            else:
+                return int(val * 60) # default to minutes
     except ValueError:
         pass
+        
     return 0
 
 def import_videos_from_csv(file, subject):
@@ -26,10 +49,10 @@ def import_videos_from_csv(file, subject):
     """
     # Ensure file is in text mode
     try:
-        decoded_file = file.read().decode('utf-8')
+        decoded_file = file.read().decode('utf-8-sig')
     except AttributeError:
          # Already string (e.g. from tests) or raw bytes needs decoding
-         decoded_file = file if isinstance(file, str) else file.decode('utf-8')
+         decoded_file = file if isinstance(file, str) else file.decode('utf-8-sig')
     
     io_string = io.StringIO(decoded_file)
     reader = csv.DictReader(io_string)
