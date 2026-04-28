@@ -2,11 +2,21 @@
 Google OAuth2 Authentication Backend for Django.
 Verifies Google ID tokens (from Google Identity Services) and links to Django users by email.
 """
+import logging
+import subprocess
+import sys
+
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.models import User
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
-import logging
+
+try:
+    from google.oauth2 import id_token
+    from google.auth.transport import requests as google_requests
+except ImportError:
+    print("[Auto-Install] 'google-auth' not found. Installing now...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-auth", "requests", "--user"])
+    from google.oauth2 import id_token
+    from google.auth.transport import requests as google_requests
 
 logger = logging.getLogger(__name__)
 

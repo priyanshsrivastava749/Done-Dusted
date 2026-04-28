@@ -88,8 +88,16 @@ def link_google_account(request):
         if not credential:
             return JsonResponse({'status': 'error', 'message': 'No credential provided'}, status=400)
             
-        from google.oauth2 import id_token
-        from google.auth.transport import requests as google_requests
+        try:
+            from google.oauth2 import id_token
+            from google.auth.transport import requests as google_requests
+        except ImportError:
+            import subprocess
+            import sys
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "google-auth", "requests", "--user"])
+            from google.oauth2 import id_token
+            from google.auth.transport import requests as google_requests
+            
         from django.conf import settings
         
         # We need the client ID
