@@ -88,29 +88,25 @@ def link_google_account(request):
         if not credential:
             return JsonResponse({'status': 'error', 'message': 'No credential provided'}, status=400)
             
-        try:
-            from google.oauth2 import id_token
-            from google.auth.transport import requests as google_requests
-        except ImportError:
-            import subprocess
-            # On PythonAnywhere, sys.executable is uwsgi, so we use 'python3'
-            subprocess.check_call(["python3", "-m", "pip", "install", "google-auth", "requests", "--user"])
-            from google.oauth2 import id_token
-            from google.auth.transport import requests as google_requests
-            
+        import requests
         from django.conf import settings
         
-        # We need the client ID
-        # Hardcoding since we did in auth, or can read from settings. Let's use the hardcoded one.
         GOOGLE_CLIENT_ID = '704532942244-f8ki61utsulo3gv0sdu4gegvc4pu48jt.apps.googleusercontent.com'
         
         try:
-            decoded_token = id_token.verify_oauth2_token(
-                credential,
-                google_requests.Request(),
-                audience=GOOGLE_CLIENT_ID,
-                clock_skew_in_seconds=60,
-            )
+            # Verify the Google ID token using Google's TokenInfo API
+            verify_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={credential}"
+            response = requests.get(verify_url)
+            
+            if response.status_code != 200:
+                raise ValueError(f"Invalid token: {response.text}")
+                
+            decoded_token = response.json()
+            
+            # Verify audience
+            if decoded_token.get('aud') != GOOGLE_CLIENT_ID:
+                raise ValueError("Token audience mismatch")
+                
             email = decoded_token.get('email')
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f'Invalid token: {str(e)}'}, status=400)

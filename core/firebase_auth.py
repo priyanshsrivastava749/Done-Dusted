@@ -3,21 +3,10 @@ Google OAuth2 Authentication Backend for Django.
 Verifies Google ID tokens (from Google Identity Services) and links to Django users by email.
 """
 import logging
-import subprocess
-import sys
+import requests
 
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.models import User
-
-try:
-    from google.oauth2 import id_token
-    from google.auth.transport import requests as google_requests
-except ImportError:
-    print("[Auto-Install] 'google-auth' not found. Installing now...")
-    # On PythonAnywhere, sys.executable is uwsgi, so we hardcode 'python3'
-    subprocess.check_call(["python3", "-m", "pip", "install", "google-auth", "requests", "--user"])
-    from google.oauth2 import id_token
-    from google.auth.transport import requests as google_requests
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +24,18 @@ class FirebaseAuthBackend(BaseBackend):
             return None
 
         try:
-            # Verify the Google ID token (from Google Identity Services)
-            decoded_token = id_token.verify_oauth2_token(
-                google_credential,
-                google_requests.Request(),
-                audience=GOOGLE_CLIENT_ID,
-                clock_skew_in_seconds=60, # Allow up to 60s of clock skew
-            )
+            # Verify the Google ID token using Google's TokenInfo API (Removes need for google-auth library)
+            verify_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={google_credential}"
+            response = requests.get(verify_url)
+            
+            if response.status_code != 200:
+                raise ValueError(f"Invalid token: {response.text}")
+                
+            decoded_token = response.json()
+            
+            # Verify audience
+            if decoded_token.get('aud') != GOOGLE_CLIENT_ID:
+                raise ValueError("Token audience mismatch")
 
             # Verify issuer
             issuer = decoded_token.get('iss', '')
