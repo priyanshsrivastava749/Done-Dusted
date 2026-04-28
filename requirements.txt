@@ -4,3 +4,4 @@ django-cors-headers
 markdown
 requests
 gunicorn
+google-auth

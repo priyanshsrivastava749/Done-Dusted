@@ -132,3 +132,21 @@ def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
 
 
+class DailyActivity(models.Model):
+    """Tracks individual items completed by a user each day."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='daily_activities')
+    date = models.DateField(default=timezone.localdate)
+    video_title = models.CharField(max_length=500)
+    subject_name = models.CharField(max_length=200)
+    exam_name = models.CharField(max_length=200, default='')
+    duration_seconds = models.PositiveIntegerField(default=0)
+    completed_at = models.DateTimeField(default=timezone.now)
+    # Store reference to the video/chunk for easy deletion on uncheck
+    video_id = models.PositiveIntegerField(null=True, blank=True)
+    chunk_id = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-completed_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.video_title} - {self.date}"

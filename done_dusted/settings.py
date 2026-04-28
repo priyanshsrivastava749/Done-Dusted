@@ -142,3 +142,21 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800 # 50 MB
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
+# --- Firebase Configuration ---
+FIREBASE_CONFIG = {
+    'apiKey': 'AIzaSyAQFNBP_7JgU-Ee9GnJSwRbUPnikjQ1_-E',
+    'authDomain': 'digital-atelier-74c74.firebaseapp.com',
+    'projectId': 'digital-atelier-74c74',
+    'storageBucket': 'digital-atelier-74c74.firebasestorage.app',
+    'messagingSenderId': '704532942244',
+    'appId': '1:704532942244:web:74851d9f0ee7423ebd4531',
+    'measurementId': 'G-GTHV2GDKDF',
+}
+
+AUTHENTICATION_BACKENDS = [
+    'core.firebase_auth.FirebaseAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Fix for Google Identity Services popup (white screen issue)
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'

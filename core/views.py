@@ -1,15 +1,18 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import models
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, FileResponse, HttpResponse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from .models import Exam, Subject, Video, UserProfile, DailyStudyLog, StudySession, DailyGoal, Streak, VideoChunk
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+from .models import Exam, Subject, Video, UserProfile, DailyStudyLog, StudySession, DailyGoal, Streak, VideoChunk, DailyActivity
 from .utils import fetch_playlist_items, fetch_video_details
 import os
+import json
 import requests
 
 def register(request):
@@ -18,11 +21,95 @@ def register(request):
         if form.is_valid():
             user = form.save()
             # UserProfile created by signal
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             return redirect('setup_api_key')
     else:
         form = UserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
+
+
+@csrf_exempt
+def firebase_login_view(request):
+    """Handle Google Sign-In credential verification and Django login."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'POST required'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        # Accept both 'credential' (GIS) and 'idToken' (legacy Firebase) 
+        credential = data.get('credential', '') or data.get('idToken', '')
+        
+        if not credential:
+            return JsonResponse({'status': 'error', 'message': 'No credential provided'}, status=400)
+        
+        print(f"[Google Login] Credential received, length={len(credential)}")
+        
+        # Authenticate using our custom Google OAuth2 backend
+        user = authenticate(request, google_credential=credential)
+        
+        if user is not None:
+            login(request, user, backend='core.firebase_auth.FirebaseAuthBackend')
+            
+            # Ensure UserProfile exists
+            UserProfile.objects.get_or_create(user=user)
+            
+            print(f"[Google Login] SUCCESS - user={user.username}")
+            return JsonResponse({
+                'status': 'ok',
+                'message': 'Login successful',
+                'username': user.username,
+                'redirect': '/core/dashboard/'
+            })
+        else:
+            print("[Google Login] FAILED - authenticate returned None")
+            err_msg = request.session.pop('auth_error', 'Authentication failed. Check server logs.')
+            return JsonResponse({'status': 'error', 'message': err_msg}, status=401)
+    
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        print(f"[Google Login] EXCEPTION: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@login_required
+def link_google_account(request):
+    """Link a Google account email to the currently logged-in Django user."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'POST required'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        email = data.get('email', '')
+        
+        if not email:
+            return JsonResponse({'status': 'error', 'message': 'No email provided'}, status=400)
+        
+        # Check if email is already used by another user
+        from django.contrib.auth.models import User
+        existing = User.objects.filter(email=email).exclude(id=request.user.id).first()
+        if existing:
+            return JsonResponse({
+                'status': 'error', 
+                'message': f'This email is already linked to user "{existing.username}"'
+            }, status=400)
+        
+        # Set email on current user
+        request.user.email = email
+        request.user.save()
+        
+        return JsonResponse({
+            'status': 'ok',
+            'message': f'Google account ({email}) linked successfully!'
+        })
+    
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @login_required
 def setup_api_key(request):
@@ -406,7 +493,6 @@ def add_video(request, subject_id):
 @login_required
 def update_video_status(request, video_id):
     video = get_object_or_404(Video, id=video_id, subject__exam__user=request.user)
-    import json
     data = json.loads(request.body)
     video.is_watched = data.get('is_watched', False)
     video.save()
@@ -429,12 +515,24 @@ def update_video_status(request, video_id):
     daily_log.save()
     today_minutes = round(daily_log.seconds_watched / 60, 1)
 
+    # --- Daily Activity Tracking ---
+    if video.is_watched:
+        DailyActivity.objects.create(
+            user=request.user,
+            date=today,
+            video_title=video.title,
+            subject_name=video.subject.name,
+            exam_name=video.subject.exam.name,
+            duration_seconds=video.duration_seconds,
+            video_id=video.id,
+        )
+    else:
+        # Remove activity record when unchecking
+        DailyActivity.objects.filter(
+            user=request.user, date=today, video_id=video.id, chunk_id__isnull=True
+        ).delete()
+
     # Update Global Daily Goal from Video Watch Time
-    # If video is watched, we add the duration to the *Global* Daily Goal progress
-    # NOTE: This assumes `DailyGoal` tracks TOTAL study time, including videos.
-    # If `DailyGoal` is only for "Focus Timer", then we shouldn't add this.
-    # BUT, usually users want *all* study time to count.
-    # Let's add video duration to DailyGoal if it exists.
     daily_goal = DailyGoal.objects.filter(user=request.user, date=today).first()
     if daily_goal and video.is_watched:
          daily_goal.completed_seconds += video.duration_seconds
@@ -456,7 +554,6 @@ def update_video_status(request, video_id):
          daily_goal.save()
 
     # --- Live Analytics Calculation ---
-    # We want to return the updated total hours for ALL exams to update any listeners
     all_exams = Exam.objects.filter(user=request.user)
     analytics_response = {}
     
@@ -562,7 +659,6 @@ def get_today_goal(request):
 @require_POST
 @login_required
 def save_focus_progress(request):
-    import json
     data = json.loads(request.body)
     new_seconds = int(data.get('seconds', 0)) # This is incremental seconds to ADD
     
@@ -657,7 +753,6 @@ def upload_csv_todo(request, subject_id):
 @require_POST
 @login_required
 def set_global_goal(request):
-    import json
     data = json.loads(request.body)
     hours = float(data.get('hours', 0))
     today = timezone.localdate()
@@ -701,3 +796,153 @@ def stop_timer(request):
     return JsonResponse({'status': 'error', 'message': 'No running session'})
 
 
+def _get_motivational_message(percent):
+    """Returns a motivational message based on goal completion percentage."""
+    if percent == 0:
+        return {
+            'emoji': '😴',
+            'message': "Aaj rest day tha kya? Koi nahi, kal se pakka start kar!",
+            'tone': 'chill',
+            'color': '#95a5a6'
+        }
+    elif percent < 50:
+        return {
+            'emoji': '🎯',
+            'message': "Start toh kiya — ab finish bhi kar! Half efforts don't cut it.",
+            'tone': 'push',
+            'color': '#e67e22'
+        }
+    elif percent < 100:
+        return {
+            'emoji': '🔥',
+            'message': "Almost there! Thoda aur push kar, goal haath mein hai!",
+            'tone': 'fire',
+            'color': '#f39c12'
+        }
+    elif percent == 100:
+        return {
+            'emoji': '✅',
+            'message': "Goal achieved! Solid performance. Keep this momentum going!",
+            'tone': 'achieved',
+            'color': '#2ecc71'
+        }
+    elif percent <= 150:
+        return {
+            'emoji': '🏆',
+            'message': f"Goal se {percent - 100}% zyada kiya! Champion mindset! Stay consistent.",
+            'tone': 'champion',
+            'color': '#1db954'
+        }
+    elif percent <= 200:
+        return {
+            'emoji': '🦁',
+            'message': f"BEAST MODE ON! {percent}% laga diya aaj! Kal bhi aise hi consistent rehna!",
+            'tone': 'beast',
+            'color': '#9b59b6'
+        }
+    else:
+        return {
+            'emoji': '👑',
+            'message': f"ABSOLUTE LEGEND! {percent}% — tune toh record tod diya! Kal maa mat chudwana, consistent rehna!",
+            'tone': 'legend',
+            'color': '#e74c3c'
+        }
+
+
+@login_required
+def daily_progress(request):
+    """Daily Progress page — shows date-wise study activity with motivational messages."""
+    from collections import OrderedDict
+    from datetime import timedelta
+    
+    # Fetch all activities for the user, ordered by date desc
+    activities = DailyActivity.objects.filter(user=request.user).order_by('-date', '-completed_at')
+    
+    # Fetch all daily goals for the user
+    goals = {g.date: g for g in DailyGoal.objects.filter(user=request.user)}
+    
+    # Group by date
+    days_data = OrderedDict()
+    for activity in activities:
+        date_key = activity.date
+        if date_key not in days_data:
+            goal = goals.get(date_key)
+            goal_seconds = int(goal.goal_hours * 3600) if goal else 0
+            days_data[date_key] = {
+                'date': date_key,
+                'activities': [],
+                'total_seconds': 0,
+                'goal_seconds': goal_seconds,
+                'goal_hours': goal.goal_hours if goal else 0,
+            }
+        days_data[date_key]['activities'].append(activity)
+        days_data[date_key]['total_seconds'] += activity.duration_seconds
+    
+    # Calculate stats for each day
+    for date_key, day in days_data.items():
+        total = day['total_seconds']
+        goal = day['goal_seconds']
+        
+        day['total_hours'] = round(total / 3600, 2)
+        day['total_minutes'] = round(total / 60)
+        
+        if goal > 0:
+            percent = round((total / goal) * 100)
+        else:
+            percent = 100 if total > 0 else 0
+        
+        day['percent'] = min(percent, 999)  # Cap display
+        day['progress_width'] = min(percent, 100)  # For progress bar (max 100% width)
+        day['motivation'] = _get_motivational_message(percent)
+        day['item_count'] = len(day['activities'])
+    
+    # Also get today's data even if no activities yet
+    today = timezone.localdate()
+    if today not in days_data:
+        goal = goals.get(today)
+        goal_seconds = int(goal.goal_hours * 3600) if goal else 0
+        days_data[today] = {
+            'date': today,
+            'activities': [],
+            'total_seconds': 0,
+            'goal_seconds': goal_seconds,
+            'goal_hours': goal.goal_hours if goal else 0,
+            'total_hours': 0,
+            'total_minutes': 0,
+            'percent': 0,
+            'progress_width': 0,
+            'motivation': _get_motivational_message(0),
+            'item_count': 0,
+        }
+        # Re-sort to put today first
+        days_data.move_to_end(today, last=False)
+    
+    context = {
+        'days': list(days_data.values()),
+        'today': today,
+    }
+    return render(request, 'daily_progress.html', context)
+
+
+@login_required
+def get_today_progress_api(request):
+    """API to get today's progress summary."""
+    today = timezone.localdate()
+    activities = DailyActivity.objects.filter(user=request.user, date=today)
+    total_seconds = sum(a.duration_seconds for a in activities)
+    
+    goal = DailyGoal.objects.filter(user=request.user, date=today).first()
+    goal_seconds = int(goal.goal_hours * 3600) if goal else 0
+    
+    percent = round((total_seconds / goal_seconds) * 100) if goal_seconds > 0 else (100 if total_seconds > 0 else 0)
+    motivation = _get_motivational_message(percent)
+    
+    return JsonResponse({
+        'status': 'ok',
+        'total_seconds': total_seconds,
+        'total_minutes': round(total_seconds / 60),
+        'goal_seconds': goal_seconds,
+        'percent': percent,
+        'item_count': activities.count(),
+        'motivation': motivation,
+    })

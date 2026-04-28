@@ -18,6 +18,8 @@ class EnsureAPIKeyMiddleware:
             reverse('logout'),
             reverse('register'),
             reverse('setup_api_key'),
+            reverse('firebase_login'),
+            reverse('link_google'),
         ]
 
     def __call__(self, request):

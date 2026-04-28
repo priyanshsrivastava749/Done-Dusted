@@ -1,15 +1,428 @@
-{% extends 'base.html' %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Done-Dusted</title>
+    <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-{% block content %}
-<div style="max-width: 400px; margin: 100px auto; text-align: center;">
-    <h1>Login</h1>
-    <form method="post" class="card">
-        {% csrf_token %}
-        <div style="text-align: left;">
-            {{ form.as_p }}
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            background: #0a0a0a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Animated Background */
+        .bg-gradient {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 50%, rgba(29, 185, 84, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(29, 185, 84, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(118, 75, 162, 0.08) 0%, transparent 50%);
+            animation: bgPulse 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgPulse {
+            0% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(24, 24, 24, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 40px 32px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .login-logo h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -1px;
+        }
+
+        .login-logo span {
+            color: #1db954;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+
+        /* Google Sign-In Button */
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 20px;
+            background: #fff;
+            color: #333;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .google-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.15);
+        }
+
+        .google-btn:active {
+            transform: translateY(0);
+        }
+
+        .google-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .google-btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 28px 0;
+            gap: 16px;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .divider span {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* Collapsible Login Form */
+        .toggle-form-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #888;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle-form-btn:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #bbb;
+        }
+
+        .password-form {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .password-form.open {
+            max-height: 400px;
+            opacity: 1;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #aaa;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: #1db954;
+        }
+
+        .form-group input::placeholder {
+            color: #555;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: #1db954;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
+        }
+
+        .submit-btn:hover {
+            background: #1ed760;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 24px;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .register-link a {
+            color: #1db954;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Toast */
+        .login-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            transition: transform 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .login-toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .login-toast.error {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .login-toast.success {
+            border-left: 4px solid #1db954;
+        }
+
+        /* Error messages */
+        .error-list {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-bottom: 16px;
+            color: #e74c3c;
+            font-size: 13px;
+            list-style: none;
+        }
+
+        .error-list li { margin-bottom: 4px; }
+        .error-list li:last-child { margin-bottom: 0; }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-logo">
+                <h1>Done-<span>Dusted</span></h1>
+            </div>
+            <p class="login-subtitle">Track your learning. Crush your goals.</p>
+
+            <!-- Google Sign-In (Rendered by Google Identity Services) -->
+            <div id="googleSignInBtn" style="display:flex;justify-content:center;min-height:44px;"></div>
+
+            <div class="divider"><span>or</span></div>
+
+            <!-- Toggle Button -->
+            <button class="toggle-form-btn" onclick="togglePasswordForm()">
+                Sign in with Username & Password ▾
+            </button>
+
+            <!-- Password Form (Collapsible) -->
+            <div id="passwordForm" class="password-form">
+                <form method="post">
+                    {% csrf_token %}
+                    {% if form.errors %}
+                    <ul class="error-list">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" name="username" placeholder="Enter username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" placeholder="Enter password" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Login</button>
+                </form>
+            </div>
+
+            <p class="register-link">
+                Don't have an account? <a href="{% url 'register' %}">Register here</a>
+            </p>
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Login</button>
-    </form>
-    <p>Don't have an account? <a href="{% url 'register' %}" style="color: var(--primary-color);">Register here</a></p>
-</div>
-{% endblock %}
+    </div>
+
+    <!-- Toast -->
+    <div id="loginToast" class="login-toast"></div>
+
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <script>
+        const GOOGLE_CLIENT_ID = '704532942244-f8ki61utsulo3gv0sdu4gegvc4pu48jt.apps.googleusercontent.com';
+
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('loginToast');
+            toast.textContent = msg;
+            toast.className = 'login-toast show ' + type;
+            setTimeout(() => { toast.className = 'login-toast'; }, 4000);
+        }
+
+        function togglePasswordForm() {
+            const form = document.getElementById('passwordForm');
+            form.classList.toggle('open');
+        }
+
+        {% if form.errors %}
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('passwordForm').classList.add('open');
+        });
+        {% endif %}
+
+        // Called when Google returns the credential
+        async function handleGoogleResponse(response) {
+            showToast('Verifying with server...', 'success');
+
+            try {
+                console.log('Got Google credential, sending to server...');
+
+                const res = await fetch('/core/auth/firebase/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response.credential })
+                });
+
+                const data = await res.json();
+                console.log('Server response:', data);
+
+                if (data.status === 'ok') {
+                    showToast('Welcome, ' + data.username + '! 🚀', 'success');
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 800);
+                } else {
+                    showToast(data.message || 'Login failed', 'error');
+                }
+            } catch (error) {
+                console.error('Server error:', error);
+                showToast('Server error: ' + error.message, 'error');
+            }
+        }
+
+        // Render Google's official Sign-In button on page load
+        window.addEventListener('load', () => {
+            if (typeof google !== 'undefined' && google.accounts) {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleGoogleResponse,
+                    auto_select: false,
+                    cancel_on_tap_outside: true,
+                });
+
+                // Render the official Google Sign-In button (Icon only)
+                google.accounts.id.renderButton(
+                    document.getElementById('googleSignInBtn'),
+                    {
+                        type: 'icon',
+                        theme: 'filled_black',
+                        size: 'large',
+                        shape: 'circle'
+                    }
+                );
+            }
+        });
+    </script>
+</body>
+</html>

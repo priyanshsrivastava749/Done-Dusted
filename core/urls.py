@@ -29,4 +29,12 @@ urlpatterns = [
     path('api/save-focus-progress/', views.save_focus_progress, name='save_focus_progress'),
     path('api/timer/start/', views.start_timer, name='start_timer'),
     path('api/timer/stop/', views.stop_timer, name='stop_timer'),
+
+    # Firebase Auth
+    path('auth/firebase/', views.firebase_login_view, name='firebase_login'),
+    path('auth/link-google/', views.link_google_account, name='link_google'),
+
+    # Daily Progress
+    path('daily-progress/', views.daily_progress, name='daily_progress'),
+    path('api/today-progress/', views.get_today_progress_api, name='get_today_progress'),
 ]

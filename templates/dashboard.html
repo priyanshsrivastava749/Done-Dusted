@@ -23,7 +23,7 @@
 <!-- ALL Section (Analytics) -->
 <!-- SKILLS Analytics Section -->
 <!-- Analytics Summary Card -->
-<div style="margin-bottom: 40px;">
+<div style="margin-bottom: 20px;">
     <div class="analytics-summary-card"
         style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
         <div>
@@ -37,6 +37,82 @@
         </a>
     </div>
 </div>
+
+<!-- Today's Progress Card -->
+<div id="todayProgressCard" style="margin-bottom: 30px;">
+    <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; position: relative; overflow: hidden;">
+        <!-- Glow Effect -->
+        <div id="todayProgressGlow" style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #1db954, #1ed760, #1db954); background-size: 200% auto; animation: glowPulse 3s linear infinite;"></div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <h2 style="margin: 0; font-size: 1.3em; display: flex; align-items: center; gap: 8px;">
+                    <span id="todayEmoji">📊</span> Today's Progress
+                </h2>
+                <p id="todayMotivation" style="color: var(--text-secondary); margin-top: 5px; margin-bottom: 0; font-size: 0.9em;">
+                    Loading...
+                </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="text-align: center;">
+                    <div id="todayItems" style="font-size: 1.8em; font-weight: 800; color: var(--accent);">-</div>
+                    <div style="font-size: 0.75em; color: var(--text-secondary); font-weight: 600;">Items</div>
+                </div>
+                <div style="text-align: center;">
+                    <div id="todayMinutes" style="font-size: 1.8em; font-weight: 800; color: var(--text-primary);">-</div>
+                    <div style="font-size: 0.75em; color: var(--text-secondary); font-weight: 600;">Minutes</div>
+                </div>
+                <div id="todayPercentBadge" style="padding: 8px 16px; border-radius: 10px; font-weight: 800; font-size: 1.1em; background: rgba(29, 185, 84, 0.1); color: #1db954; border: 1px solid rgba(29, 185, 84, 0.2);">
+                    <span id="todayPercent">0%</span>
+                </div>
+                <a href="{% url 'daily_progress' %}" class="btn btn-primary" style="padding: 10px 20px; font-size: 0.85em;">
+                    View All →
+                </a>
+            </div>
+        </div>
+        
+        <!-- Mini Progress Bar -->
+        <div style="margin-top: 15px; height: 4px; background: var(--bg-secondary); border-radius: 2px; overflow: hidden;">
+            <div id="todayProgressBar" style="height: 100%; width: 0%; background: #1db954; border-radius: 2px; transition: width 1s cubic-bezier(0.25, 0.8, 0.25, 1);"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes glowPulse {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+}
+</style>
+
+<script>
+// Load today's progress on dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/core/api/today-progress/')
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('todayItems').textContent = data.item_count;
+                document.getElementById('todayMinutes').textContent = data.total_minutes;
+                document.getElementById('todayPercent').textContent = data.percent + '%';
+                document.getElementById('todayEmoji').textContent = data.motivation.emoji;
+                document.getElementById('todayMotivation').textContent = data.motivation.message;
+                document.getElementById('todayProgressBar').style.width = Math.min(data.percent, 100) + '%';
+                
+                // Update badge color
+                const badge = document.getElementById('todayPercentBadge');
+                badge.style.color = data.motivation.color;
+                badge.style.background = data.motivation.color + '15';
+                badge.style.borderColor = data.motivation.color + '30';
+                
+                // Update glow color
+                document.getElementById('todayProgressGlow').style.background = 
+                    `linear-gradient(90deg, ${data.motivation.color}, ${data.motivation.color}88, ${data.motivation.color})`;
+            }
+        })
+        .catch(err => console.log('Progress fetch error:', err));
+});
+</script>
 
 <!-- GATE Progress Section Removed (Moved to Analytics Page) -->
 
