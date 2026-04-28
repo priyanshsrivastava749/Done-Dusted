@@ -372,15 +372,7 @@
             <div>
                 <p>User: {{ user.username }}</p>
                 {% if not user.email %}
-                <button id="linkGoogleBtn" class="btn" style="width: 100%; margin-bottom: 8px; background: rgba(66,133,244,0.1); border-color: rgba(66,133,244,0.3); color: #4285F4; font-size: 12px;" onclick="linkGoogleAccount()">
-                    <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right: 6px; flex-shrink:0;">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                    Link Google Account
-                </button>
+                <div id="linkGoogleBtnContainer" style="width: 100%; margin-bottom: 8px; display:flex; justify-content:center; min-height:40px;"></div>
                 {% else %}
                 <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">✅ {{ user.email }}</p>
                 {% endif %}
@@ -432,44 +424,9 @@
         </div>
     </div>
 
-    <!-- Alarm Sound -->
-    <audio id="alarmSound"
-        src="data:audio/mp3;base64,SUQzBAAAAAAAI1RTSVMAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABAAAAAAAAAAAA0gAAAA0AAAAAAAAAAAAAABgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-        preload="auto"></audio>
-
-    <!-- Hidden Timer Icon -->
-    <div id="minimizedTimerIcon"
-        style="display:none; position:fixed; bottom:20px; right:20px; background:var(--accent); color:#fff; width:50px; height:50px; border-radius:50%; align-items:center; justify-content:center; box-shadow:0 10px 40px rgba(0,0,0,0.6); z-index:9999; cursor:pointer; font-size:24px; transition: transform 0.2s;"
-        onclick="toggleTimerVisibility()" title="Show Timer" onmouseover="this.style.transform='scale(1.1)'"
-        onmouseout="this.style.transform='scale(1)'">
-        ⏱️
-    </div>
-
-    <!-- Global Floating Timer HTML -->
-    <div id="globalTimerWidget" class="global-timer-widget">
-        <div style="display: flex; flex-direction: column; line-height: 1;">
-            <span class="timer-label">FOCUS</span>
-        </div>
-        <span id="gTimerDisplay" class="timer-time">--:--:--</span>
-        <button id="gTimerBtn" class="timer-c-btn timer-start" onclick="toggleGlobalTimer()">▶</button>
-        <button onclick="toggleTimerVisibility()"
-            style="background:transparent; border:none; color:#95a5a6; font-size:16px; cursor:pointer; margin-left:5px; transition:color 0.2s;"
-            onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#95a5a6'"
-            title="Minimize Timer">✖</button>
-    </div>
 
     <script>
-        function toggleTimerVisibility() {
-            const widget = document.getElementById('globalTimerWidget');
-            const icon = document.getElementById('minimizedTimerIcon');
-            if (widget.style.display !== 'none') {
-                widget.style.display = 'none';
-                icon.style.display = 'flex';
-            } else {
-                widget.style.display = 'flex';
-                icon.style.display = 'none';
-            }
-        }
+
 
         function toggleSidebar() {
             document.querySelector('.layout').classList.toggle('sidebar-collapsed');
@@ -522,362 +479,58 @@
             }
         });
 
-        // --- GLOBAL TIMER LOGIC (Persistent) ---
-        const gTimerWidget = document.getElementById('globalTimerWidget');
-        const gTimerDisplay = document.getElementById('gTimerDisplay');
-        const gTimerBtn = document.getElementById('gTimerBtn');
-        let gTimerInterval;
-        let gPendingProgress = false;
 
-        // On Load
-        document.addEventListener('DOMContentLoaded', async function () {
-            console.log("Timer Widget Loaded");
-            syncOfflineProgress();
-            // Check if we have a goal (to determine if we should show the widget)
-            // But to save requests, we usually only show if user interacts or we know state.
-            // For now, let's always 'try' to fetch state or check localStorage.
-
-            // 1. Check LocalStorage for Active Run
-            const storedStart = localStorage.getItem('timerStartTime'); // timestamp
-            const storedDuration = localStorage.getItem('timerTotalDuration'); // seconds
-
-            if (storedStart && storedDuration) {
-                // Timer is RUNNING
-                showTimerWidget();
-                startGlobalTicker(parseInt(storedStart), parseInt(storedDuration));
-            } else {
-                // Timer NOT running. Check if we have a valid goal to show widget?
-                // Or just query backend status once.
-                try {
-                    const res = await fetch("{% url 'get_today_goal' %}");
-                    const data = await res.json();
-                    if (data.status === 'ok') {
-                        if (!data.is_completed) {
-                            showTimerWidget();
-                            updateGlobalDisplay(data.remaining_seconds);
-                            // Store potentially needed data
-                            localStorage.setItem('timerRemainingStatic', data.remaining_seconds);
-                        }
-                    }
-                } catch (e) { console.log('Timer init failed', e); }
-            }
-        });
-
-        // Ensure we pause the timer if the user closes the tab!
-        window.addEventListener('beforeunload', function () {
-            const startTime = parseInt(localStorage.getItem('timerStartTime'));
-            if (startTime) {
-                const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
-                const sentSecs = parseInt(localStorage.getItem('timerSentSeconds') || '0');
-                const unsent = elapsedSec - sentSecs;
-
-                // Immediately queue unsent seconds so they survive the browser close
-                if (unsent > 0) {
-                    let offlineSecs = parseInt(localStorage.getItem('offlineFocusSeconds') || '0');
-                    localStorage.setItem('offlineFocusSeconds', (offlineSecs + unsent).toString());
-                }
-
-                // Update the static remaining so it resumes properly
-                const originalDuration = parseInt(localStorage.getItem('timerTotalDuration'));
-                localStorage.setItem('timerRemainingStatic', originalDuration - elapsedSec);
-
-                // Clear running state
-                localStorage.removeItem('timerStartTime');
-                localStorage.removeItem('timerTotalDuration');
-                localStorage.removeItem('timerSentSeconds');
-            }
-        });
-
-        function showTimerWidget() {
-            gTimerWidget.classList.add('visible');
-        }
-
-        function updateGlobalDisplay(sec) {
-            let isOvertime = false;
-            let prefix = "";
-
-            if (sec < 0) {
-                isOvertime = true;
-                sec = Math.abs(sec); // Convert to positive for calc
-                prefix = "+ ";
-                gTimerDisplay.style.color = '#2ecc71'; // Green for overtime
-            } else {
-                gTimerDisplay.style.color = '#ecf0f1'; // Default
-            }
-
-            const h = Math.floor(sec / 3600).toString().padStart(2, '0');
-            const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
-            const s = (sec % 60).toString().padStart(2, '0');
-            gTimerDisplay.textContent = `${prefix}${h}:${m}:${s}`;
-        }
-
-        function showGlobalToast(msg) {
-            const x = document.getElementById("globalToast");
-            x.textContent = msg;
-            x.className = "toast-global show";
-            setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
-        }
-
-        async function toggleGlobalTimer() {
-            const isRunning = localStorage.getItem('timerStartTime') !== null;
-
-            if (!isRunning) {
-                // START
-                let duration = localStorage.getItem('timerRemainingStatic');
-
-                if (!duration) {
-                    const res = await fetch("{% url 'get_today_goal' %}");
-                    const data = await res.json();
-                    if (data.status !== 'ok') {
-                        showGlobalToast("Please set a Daily Goal first!");
-                        return;
-                    }
-                    duration = data.remaining_seconds;
-                }
-
-                duration = parseInt(duration);
-                if (duration <= 0) {
-                    showGlobalToast("Goal already completed!");
-                    return;
-                }
-
-                const now = Date.now(); // ms
-                localStorage.setItem('timerStartTime', now);
-                localStorage.setItem('timerTotalDuration', duration);
-                localStorage.setItem('timerSentSeconds', '0');
-
-                startGlobalTicker(now, duration);
-                showGlobalToast("Focus Mode ON! 🚀");
-
-            } else {
-                // STOP
-                stopGlobalTicker();
-
-                // Calculate exactly how much time is left when paused
-                const startTime = parseInt(localStorage.getItem('timerStartTime'));
-                const originalDuration = parseInt(localStorage.getItem('timerTotalDuration'));
-                const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
-                const newRemaining = originalDuration - elapsedSec;
-
-                // Save the new remaining time so it resumes from here
-                localStorage.setItem('timerRemainingStatic', newRemaining);
-
-                let sentSecs = parseInt(localStorage.getItem('timerSentSeconds') || '0');
-                let unsent = elapsedSec - sentSecs;
-                if (unsent > 0) {
-                    await saveGlobalProgress(unsent, true);
-                }
-
-                // Clear running state
-                localStorage.removeItem('timerStartTime');
-                localStorage.removeItem('timerTotalDuration');
-                localStorage.removeItem('timerSentSeconds');
-
-                updateGlobalDisplay(newRemaining);
-                showGlobalToast("Focus Paused.");
-            }
-        }
-
-        function startGlobalTicker(startTimestamp, totalDurationSeconds) {
-            gTimerWidget.classList.add('active');
-            gTimerBtn.textContent = '⏹';
-            gTimerBtn.classList.remove('timer-start');
-            gTimerBtn.classList.add('timer-stop');
-
-            if (gTimerInterval) clearInterval(gTimerInterval);
-
-            gTimerInterval = setInterval(() => {
-                const now = Date.now();
-                const elapsedMS = now - startTimestamp;
-                const elapsedSec = Math.floor(elapsedMS / 1000);
-                const remaining = totalDurationSeconds - elapsedSec;
-
-                updateGlobalDisplay(remaining);
-
-                if (remaining <= 0) {
-                    if (remaining === 0 || remaining === -1) {
-                        showGlobalToast("Goal Achieved! 🎉 You're in Overtime!");
-                    }
-                }
-
-                let sentSecs = parseInt(localStorage.getItem('timerSentSeconds') || '0');
-                let unsent = elapsedSec - sentSecs;
-
-                if (unsent >= 10 && !gPendingProgress) {
-                    gPendingProgress = true;
-                    saveGlobalProgress(unsent, false).finally(() => { gPendingProgress = false; });
-                }
-
-                // Continuously update the static remaining in case of page reload while running
-                localStorage.setItem('timerRemainingStatic', remaining);
-
-            }, 1000);
-        }
-
-        function stopGlobalTicker() {
-            gTimerWidget.classList.remove('active');
-            gTimerBtn.textContent = '▶';
-            gTimerBtn.classList.remove('timer-stop');
-            gTimerBtn.classList.add('timer-start');
-            if (gTimerInterval) clearInterval(gTimerInterval);
-        }
-
-        async function finishGlobalTimer() {
-            // This is now only called manually or if we want to force stop
-            stopGlobalTicker();
-            const startTime = parseInt(localStorage.getItem('timerStartTime'));
-            if (startTime) {
-                const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
-                let sentSecs = parseInt(localStorage.getItem('timerSentSeconds') || '0');
-                let unsent = elapsedSec - sentSecs;
-                if (unsent > 0) await saveGlobalProgress(unsent, true);
-            }
-            localStorage.removeItem('timerStartTime');
-            localStorage.removeItem('timerTotalDuration');
-            localStorage.removeItem('timerSentSeconds');
-
-            // Fetch actual status to be clean
-            const res = await fetch("{% url 'get_today_goal' %}");
-            const data = await res.json();
-            if (data.status === 'ok') updateGlobalDisplay(data.remaining_seconds);
-
-            showGlobalToast("Session Ended. Great work!");
-        }
-
-        async function syncOfflineProgress() {
-            let offlineSecs = parseInt(localStorage.getItem('offlineFocusSeconds') || '0');
-            if (offlineSecs > 0) {
-                try {
-                    const res = await fetch("{% url 'save_focus_progress' %}", {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': '{{ csrf_token }}',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ seconds: offlineSecs })
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.status === 'ok') {
-                            localStorage.setItem('offlineFocusSeconds', '0');
-                            console.log("Offline progress synced:", offlineSecs);
-                        } else if (data.status === 'no_goal') {
-                            localStorage.setItem('offlineFocusSeconds', '0');
-                        }
-                    }
-                } catch (e) { }
-            }
-        }
-
-        function handleNewDay() {
-            stopGlobalTicker();
-            localStorage.removeItem('timerStartTime');
-            localStorage.removeItem('timerTotalDuration');
-            localStorage.removeItem('timerSentSeconds');
-            localStorage.removeItem('offlineFocusSeconds');
-            alert("A new day has started! Let's set your new daily goal.");
-            window.location.href = "{% url 'dashboard' %}";
-        }
-
-        async function saveGlobalProgress(secs, isStop = false) {
-            try {
-                const res = await fetch("{% url 'save_focus_progress' %}", {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ seconds: secs })
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.status === 'ok') {
-                        if (!isStop) {
-                            let sentSecs = parseInt(localStorage.getItem('timerSentSeconds') || '0');
-                            localStorage.setItem('timerSentSeconds', (sentSecs + secs).toString());
-                        }
-                        return true;
-                    } else if (data.status === 'no_goal') {
-                        handleNewDay();
-                        return false;
-                    }
-                }
-            } catch (e) {
-                console.warn("Network error saving progress. Local sync enabled.", e);
-            }
-
-            if (isStop) {
-                let offlineSecs = parseInt(localStorage.getItem('offlineFocusSeconds') || '0');
-                localStorage.setItem('offlineFocusSeconds', (offlineSecs + secs).toString());
-            }
-            return false;
-        }
     </script>
 
-    <!-- Firebase SDK for Link Google Account -->
-    {% if user.is_authenticated %}
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <!-- Google Identity Services for Linking Account -->
+    {% if user.is_authenticated and not user.email %}
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
-        // Firebase config (only init once)
-        if (!window._fbApp) {
-            window._fbApp = firebase.initializeApp({
-                apiKey: "AIzaSyAQFNBP_7JgU-Ee9GnJSwRbUPnikjQ1_-E",
-                authDomain: "digital-atelier-74c74.firebaseapp.com",
-                projectId: "digital-atelier-74c74",
-                storageBucket: "digital-atelier-74c74.firebasestorage.app",
-                messagingSenderId: "704532942244",
-                appId: "1:704532942244:web:74851d9f0ee7423ebd4531",
-            });
+        const GOOGLE_CLIENT_ID = '704532942244-f8ki61utsulo3gv0sdu4gegvc4pu48jt.apps.googleusercontent.com';
+        
+        async function handleGoogleLinkResponse(response) {
+            try {
+                if (window.showGlobalToast) showGlobalToast('Linking account...', 'info');
+                
+                const res = await fetch('/core/auth/link-google/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response.credential })
+                });
+
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    if (window.showGlobalToast) showGlobalToast('Google account linked! 🎉', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    alert(data.message || 'Failed to link');
+                }
+            } catch (err) {
+                console.error('Link error:', err);
+                alert('Error linking: ' + err.message);
+            }
         }
 
-        // Check for link-google redirect result on page load
-        firebase.auth().getRedirectResult().then(async (result) => {
-            if (result.user && localStorage.getItem('linkGooglePending') === 'true') {
-                localStorage.removeItem('linkGooglePending');
-                const email = result.user.email;
-                const btn = document.getElementById('linkGoogleBtn');
+        window.addEventListener('load', () => {
+            if (typeof google !== 'undefined' && google.accounts) {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleGoogleLinkResponse,
+                    auto_select: false,
+                    cancel_on_tap_outside: true,
+                });
 
-                try {
-                    const res = await fetch('/core/auth/link-google/', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: email })
-                    });
-
-                    const data = await res.json();
-                    if (data.status === 'ok') {
-                        if (btn) {
-                            btn.innerHTML = '✅ ' + email;
-                            btn.style.background = 'rgba(29,185,84,0.1)';
-                            btn.style.borderColor = 'rgba(29,185,84,0.3)';
-                            btn.style.color = '#1db954';
-                            btn.disabled = true;
-                        }
-                        if (window.showGlobalToast) showGlobalToast('Google account linked! 🎉');
-                    } else {
-                        alert(data.message || 'Failed to link');
-                    }
-                } catch (err) {
-                    console.error('Link error:', err);
-                    alert('Error linking: ' + err.message);
+                const container = document.getElementById('linkGoogleBtnContainer');
+                if (container) {
+                    google.accounts.id.renderButton(
+                        container,
+                        { theme: 'outline', size: 'large', type: 'standard', width: container.offsetWidth || 230 }
+                    );
                 }
             }
-        }).catch(err => console.error('Redirect result error:', err));
-
-        function linkGoogleAccount() {
-            const btn = document.getElementById('linkGoogleBtn');
-            if (!btn) return;
-            btn.innerHTML = 'Redirecting...';
-            btn.disabled = true;
-
-            // Save intent so we know to complete link after redirect
-            localStorage.setItem('linkGooglePending', 'true');
-
-            const provider = new firebase.auth.GoogleAuthProvider();
-            firebase.auth().signInWithRedirect(provider);
-        }
+        });
     </script>
+    {% endif %}
     {% endif %}
 </body>
 

@@ -83,10 +83,32 @@ def link_google_account(request):
     
     try:
         data = json.loads(request.body)
-        email = data.get('email', '')
+        credential = data.get('credential', '')
         
+        if not credential:
+            return JsonResponse({'status': 'error', 'message': 'No credential provided'}, status=400)
+            
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+        from django.conf import settings
+        
+        # We need the client ID
+        # Hardcoding since we did in auth, or can read from settings. Let's use the hardcoded one.
+        GOOGLE_CLIENT_ID = '704532942244-f8ki61utsulo3gv0sdu4gegvc4pu48jt.apps.googleusercontent.com'
+        
+        try:
+            decoded_token = id_token.verify_oauth2_token(
+                credential,
+                google_requests.Request(),
+                audience=GOOGLE_CLIENT_ID,
+                clock_skew_in_seconds=60,
+            )
+            email = decoded_token.get('email')
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Invalid token: {str(e)}'}, status=400)
+            
         if not email:
-            return JsonResponse({'status': 'error', 'message': 'No email provided'}, status=400)
+            return JsonResponse({'status': 'error', 'message': 'No email found in token'}, status=400)
         
         # Check if email is already used by another user
         from django.contrib.auth.models import User
