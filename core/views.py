@@ -93,8 +93,8 @@ def link_google_account(request):
             from google.auth.transport import requests as google_requests
         except ImportError:
             import subprocess
-            import sys
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "google-auth", "requests", "--user"])
+            # On PythonAnywhere, sys.executable is uwsgi, so we use 'python3'
+            subprocess.check_call(["python3", "-m", "pip", "install", "google-auth", "requests", "--user"])
             from google.oauth2 import id_token
             from google.auth.transport import requests as google_requests
             

@@ -14,7 +14,8 @@ try:
     from google.auth.transport import requests as google_requests
 except ImportError:
     print("[Auto-Install] 'google-auth' not found. Installing now...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-auth", "requests", "--user"])
+    # On PythonAnywhere, sys.executable is uwsgi, so we hardcode 'python3'
+    subprocess.check_call(["python3", "-m", "pip", "install", "google-auth", "requests", "--user"])
     from google.oauth2 import id_token
     from google.auth.transport import requests as google_requests
 
