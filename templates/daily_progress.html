@@ -76,14 +76,21 @@
                     <div class="dp-activity-info">
                         <span class="dp-activity-title">{{ activity.video_title }}</span>
                         <span class="dp-activity-meta">
-                            {{ activity.subject_name }} · {{ activity.exam_name }}
+                            {{ activity.subject_name }}
+                            {% if activity.exam_name %} · {{ activity.exam_name }}{% endif %}
                             {% if activity.duration_seconds %}
                             · {{ activity.duration_seconds|floatformat:0 }}s
                             {% endif %}
                         </span>
                     </div>
-                    <div class="dp-activity-time">
+                    <div class="dp-activity-time" style="display: flex; align-items: center; gap: 10px;">
                         {{ activity.completed_at|time:"h:i A" }}
+                        {% if not activity.video_id and not activity.chunk_id and day.date == today %}
+                        <form method="POST" action="{% url 'delete_custom_activity' activity.id %}" style="margin:0;" onsubmit="return confirm('Delete this offline task?');">
+                            {% csrf_token %}
+                            <button type="submit" class="dp-delete-btn" title="Delete offline task">🗑️</button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
@@ -95,6 +102,17 @@
             <span>No items completed {% if day.date == today %}yet{% endif %} — {% if day.date == today %}start checking those boxes!{% else %}rest day perhaps?{% endif %}</span>
         </div>
         {% endif %}
+
+        <!-- Add Custom Task Form -->
+        <div class="dp-add-custom">
+            <form method="POST" action="{% url 'add_custom_activity' %}" class="dp-custom-form">
+                {% csrf_token %}
+                <input type="hidden" name="date" value="{{ day.date|date:'Y-m-d' }}">
+                <input type="text" name="title" placeholder="Offline Task (e.g. Read Book)" required>
+                <input type="number" name="duration_minutes" placeholder="Mins" required min="1">
+                <button type="submit" class="dp-add-btn">Add</button>
+            </form>
+        </div>
     </div>
     {% empty %}
     <div class="dp-no-data">
@@ -416,6 +434,62 @@
     text-align: center;
     padding: 60px 20px;
     color: var(--text-secondary);
+}
+
+/* Custom Task Form */
+.dp-add-custom {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border-color);
+}
+.dp-custom-form {
+    display: flex;
+    gap: 8px;
+}
+.dp-custom-form input {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    outline: none;
+}
+.dp-custom-form input[type="text"] {
+    flex: 1;
+}
+.dp-custom-form input[type="number"] {
+    width: 70px;
+}
+.dp-custom-form input:focus {
+    border-color: var(--accent);
+}
+.dp-add-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 13px;
+    transition: transform 0.2s, background 0.2s;
+}
+.dp-add-btn:hover {
+    background: #1ed760;
+    transform: scale(1.05);
+}
+.dp-delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    font-size: 14px;
+    padding: 0;
+}
+.dp-delete-btn:hover {
+    opacity: 1;
 }
 
 /* Mobile */

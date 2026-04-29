@@ -36,5 +36,7 @@ urlpatterns = [
 
     # Daily Progress
     path('daily-progress/', views.daily_progress, name='daily_progress'),
+    path('daily-progress/add-custom/', views.add_custom_activity, name='add_custom_activity'),
+    path('daily-progress/delete-custom/<int:activity_id>/', views.delete_custom_activity, name='delete_custom_activity'),
     path('api/today-progress/', views.get_today_progress_api, name='get_today_progress'),
 ]

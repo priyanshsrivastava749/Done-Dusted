@@ -869,7 +869,7 @@ def _get_motivational_message(percent):
     else:
         return {
             'emoji': '👑',
-            'message': f"ABSOLUTE LEGEND! {percent}% — tune toh record tod diya! Kal maa mat chudwana, consistent rehna!",
+            'message': f"ABSOLUTE LEGEND! {percent}% — tune toh record tod diya! Kal bhi aise hi consistent rehna!",
             'tone': 'legend',
             'color': '#e74c3c'
         }
@@ -972,3 +972,81 @@ def get_today_progress_api(request):
         'item_count': activities.count(),
         'motivation': motivation,
     })
+
+@require_POST
+@login_required
+def add_custom_activity(request):
+    title = request.POST.get('title')
+    duration_minutes = int(request.POST.get('duration_minutes', 0))
+    date_str = request.POST.get('date') # Format: YYYY-MM-DD
+    
+    if not title or duration_minutes <= 0 or not date_str:
+        messages.error(request, 'Invalid data for custom activity.')
+        return redirect('daily_progress')
+
+    from datetime import datetime
+    try:
+        activity_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        messages.error(request, 'Invalid date format.')
+        return redirect('daily_progress')
+
+    duration_seconds = duration_minutes * 60
+
+    # Create DailyActivity
+    DailyActivity.objects.create(
+        user=request.user,
+        date=activity_date,
+        video_title=title,
+        subject_name="Custom Task",
+        exam_name="",
+        duration_seconds=duration_seconds,
+    )
+
+    # Update DailyGoal if it exists
+    daily_goal = DailyGoal.objects.filter(user=request.user, date=activity_date).first()
+    if daily_goal:
+        daily_goal.completed_seconds += duration_seconds
+        
+        goal_seconds = int(daily_goal.goal_hours * 3600)
+        if daily_goal.completed_seconds >= goal_seconds and not daily_goal.achieved:
+            daily_goal.achieved = True
+            profile = request.user.profile
+            streak, _ = Streak.objects.get_or_create(user=request.user)
+            profile.current_streak += 1
+            profile.last_goal_date = activity_date
+            profile.save()
+            streak.current_streak = profile.current_streak
+            streak.best_streak = max(streak.best_streak, streak.current_streak)
+            streak.save()
+        daily_goal.save()
+        
+    messages.success(request, f'Added custom task "{title}" for {duration_minutes} minutes.')
+    return redirect('daily_progress')
+
+@require_POST
+@login_required
+def delete_custom_activity(request, activity_id):
+    activity = get_object_or_404(DailyActivity, id=activity_id, user=request.user)
+    
+    today = timezone.localdate()
+    if activity.date != today:
+        messages.error(request, 'You can only delete custom tasks for today.')
+        return redirect('daily_progress')
+        
+    if activity.video_id is not None or activity.chunk_id is not None:
+        messages.error(request, 'You cannot delete system-tracked activities from here.')
+        return redirect('daily_progress')
+        
+    duration_seconds = activity.duration_seconds
+    activity_date = activity.date
+    activity.delete()
+    
+    # Revert goal progress
+    daily_goal = DailyGoal.objects.filter(user=request.user, date=activity_date).first()
+    if daily_goal:
+        daily_goal.completed_seconds = max(0, daily_goal.completed_seconds - duration_seconds)
+        daily_goal.save()
+        
+    messages.success(request, 'Custom task deleted.')
+    return redirect('daily_progress')
