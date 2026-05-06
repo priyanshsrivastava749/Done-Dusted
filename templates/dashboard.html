@@ -10,13 +10,15 @@
         <h1>Welcome, {{ user.username }}</h1>
         <p style="color: var(--text-secondary);">Let's crush your goals today!</p>
     </div>
-    <div class="streak-card">
-        <span style="font-size: 1.5em;">🔥</span>
-        <div>
-            <div>{{ streak.current_streak }} Day Streak</div>
-            <div style="font-size: 0.8em; opacity: 0.9;">Best: {{ streak.best_streak }}</div>
+    <a href="{% url 'streak_view' %}" style="text-decoration: none; color: inherit;">
+        <div class="streak-card" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            <span style="font-size: 1.5em;">🔥</span>
+            <div>
+                <div>{{ streak.current_streak }} Day Streak</div>
+                <div style="font-size: 0.8em; opacity: 0.9;">Best: {{ streak.best_streak }}</div>
+            </div>
         </div>
-    </div>
+    </a>
 </div>
 
 <!-- ALL Section (Analytics) -->

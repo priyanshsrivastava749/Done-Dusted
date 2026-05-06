@@ -1050,3 +1050,49 @@ def delete_custom_activity(request, activity_id):
         
     messages.success(request, 'Custom task deleted.')
     return redirect('daily_progress')
+
+@login_required
+def streak_view(request):
+    import datetime
+    today = timezone.localdate()
+    # Go back 364 days
+    start_date = today - datetime.timedelta(days=364)
+    
+    # Adjust to the previous Sunday so the grid aligns correctly
+    days_to_subtract = (start_date.weekday() + 1) % 7
+    start_date = start_date - datetime.timedelta(days=days_to_subtract)
+    
+    total_days = (today - start_date).days + 1
+    
+    goals = DailyGoal.objects.filter(user=request.user, date__gte=start_date, date__lte=today)
+    goals_dict = {g.date: g for g in goals}
+    
+    days = []
+    for i in range(total_days):
+        d = start_date + datetime.timedelta(days=i)
+        goal = goals_dict.get(d)
+        
+        level = 0
+        if goal:
+            if goal.achieved:
+                level = 4
+            elif goal.completed_seconds > 0:
+                pct = (goal.completed_seconds / (goal.goal_hours * 3600)) if goal.goal_hours > 0 else 0
+                if pct > 0.75:
+                    level = 3
+                elif pct > 0.4:
+                    level = 2
+                else:
+                    level = 1
+                    
+        days.append({
+            'date': d.strftime('%b %d, %Y'),
+            'iso_date': d.strftime('%Y-%m-%d'),
+            'level': level,
+            'completed_hours': round((goal.completed_seconds if goal else 0) / 3600, 1),
+            'goal_hours': goal.goal_hours if goal else 0
+        })
+        
+    streak, _ = Streak.objects.get_or_create(user=request.user)
+    
+    return render(request, 'streak.html', {'days': days, 'streak': streak})

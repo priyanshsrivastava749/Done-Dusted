@@ -35,6 +35,7 @@ urlpatterns = [
     path('auth/link-google/', views.link_google_account, name='link_google'),
 
     # Daily Progress
+    path('streak/', views.streak_view, name='streak_view'),
     path('daily-progress/', views.daily_progress, name='daily_progress'),
     path('daily-progress/add-custom/', views.add_custom_activity, name='add_custom_activity'),
     path('daily-progress/delete-custom/<int:activity_id>/', views.delete_custom_activity, name='delete_custom_activity'),
