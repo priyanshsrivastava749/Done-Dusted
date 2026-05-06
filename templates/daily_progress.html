@@ -109,6 +109,7 @@
         {% endif %}
 
         <!-- Add Custom Task Form -->
+        {% if day.date == today %}
         <div class="dp-add-custom">
             <form method="POST" action="{% url 'add_custom_activity' %}" class="dp-custom-form">
                 {% csrf_token %}
@@ -118,6 +119,7 @@
                 <button type="submit" class="dp-add-btn">Add</button>
             </form>
         </div>
+        {% endif %}
     </div>
     {% empty %}
     <div class="dp-no-data">
